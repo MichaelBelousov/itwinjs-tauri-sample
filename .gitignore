@@ -97,3 +97,23 @@ test_video.mp4
 
 # vim
 .*.sw[op]
+
+# dependencies
+/.pnp
+.pnp.js
+
+# production
+/build
+/lib
+/dist
+
+# misc
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# local snapshot files
+**/*.db
+**/*.db-journal
+**/*.Tiles
