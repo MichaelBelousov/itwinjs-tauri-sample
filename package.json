@@ -69,7 +69,8 @@
   "devDependencies": {
     "@tauri-apps/cli": "^1.0.0-beta.10",
     "execa": "5.1.1",
-    "pkg": "5.2.1"
+    "pkg": "5.2.1",
+    "webpack-cli": "^3.0.0"
   },
   "scripts": {
     "tauri": "tauri",
@@ -79,7 +80,7 @@
     "build": "yarn build:backend && yarn build:frontend && yarn build:tauri",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:backend": "tsc -p tsconfig.backend.json",
+    "build:backend": "tsc -p tsconfig.backend.json && webpack",
     "build:frontend": "yarn pseudolocalize && react-scripts build",
     "build:tauri": "pkg package.json --output src-tauri/binaries/app && node scripts/move-binary.js",
     "electron": "electron lib/backend/main.js",

@@ -117,3 +117,6 @@ test_video.mp4
 **/*.db
 **/*.db-journal
 **/*.Tiles
+
+# ignored backups
+*.bak

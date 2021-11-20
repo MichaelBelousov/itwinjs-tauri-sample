@@ -897,9 +897,11 @@ export class TauriHost {
         ...options?.webPreferences,
 
         // These web preference variables should not be overriden by the ElectronHostWindowOptions
+        /*
         preload: require.resolve(
-          /* webpack: copyfile */ "./ElectronPreload.js"
+          "./TauriPreload.js"
         ),
+        */
         experimentalFeatures: false,
         nodeIntegration: false,
         contextIsolation: true,
