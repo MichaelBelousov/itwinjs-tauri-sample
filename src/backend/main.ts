@@ -4,10 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Logger, LogLevel } from "@bentley/bentleyjs-core";
-import {
-  ElectronHost,
-  ElectronHostOptions,
-} from "@bentley/electron-manager/lib/ElectronBackend";
 import { IpcHost } from "@bentley/imodeljs-backend";
 import { Presentation } from "@bentley/presentation-backend";
 import { Menu } from "electron";
@@ -17,6 +13,7 @@ import * as path from "path";
 import { AppLoggerCategory } from "../common/LoggerCategory";
 import { channelName, viewerRpcs } from "../common/ViewerConfig";
 import { appInfo, getAppEnvVar } from "./AppInfo";
+import { TauriHost, TauriHostOptions } from "./TauriHost";
 import ViewerHandler from "./ViewerHandler";
 
 require("dotenv-flow").config(); // eslint-disable-line @typescript-eslint/no-var-requires
@@ -36,7 +33,7 @@ const viewerMain = async () => {
   const redirectUri = getAppEnvVar("REDIRECT_URI");
   const issuerUrl = getAppEnvVar("ISSUER_URL");
 
-  const electronHost: ElectronHostOptions = {
+  const tauriHost: TauriHostOptions = {
     webResourcesPath: path.join(__dirname, "..", "..", "build"),
     rpcInterfaces: viewerRpcs,
     developmentServer: process.env.NODE_ENV === "development",
@@ -50,11 +47,11 @@ const viewerMain = async () => {
     iconName: "itwin-viewer.ico",
   };
 
-  await ElectronHost.startup({ electronHost });
+  await TauriHost.startup({ tauriHost });
 
   Presentation.initialize();
 
-  await ElectronHost.openMainWindow({
+  await TauriHost.openMainWindow({
     width: 1280,
     height: 800,
     show: true,
@@ -63,10 +60,10 @@ const viewerMain = async () => {
   });
 
   if (process.env.NODE_ENV === "development") {
-    ElectronHost.mainWindow?.webContents.toggleDevTools();
+    TauriHost.mainWindow?.webContents.toggleDevTools();
   }
   // add the menu
-  ElectronHost.mainWindow?.on("ready-to-show", createMenu);
+  TauriHost.mainWindow?.on("ready-to-show", createMenu);
 };
 
 const createMenu = () => {
@@ -138,9 +135,9 @@ const createMenu = () => {
   const menu = Menu.buildFromTemplate(template as MenuItemConstructorOptions[]);
 
   Menu.setApplicationMenu(menu);
-  ElectronHost.mainWindow?.setMenuBarVisibility(true);
+  TauriHost.mainWindow?.setMenuBarVisibility(true);
   // this is overridden in ElectronHost and set to true so it needs to be...re-overriden??
-  ElectronHost.mainWindow?.setAutoHideMenuBar(false);
+  TauriHost.mainWindow?.setAutoHideMenuBar(false);
 };
 
 try {

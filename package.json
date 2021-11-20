@@ -1,7 +1,7 @@
 {
   "name": "itwinjs-tauri-sample",
   "version": "0.1.0",
-  "bin": "src/index.js",
+  "bin": "old-src/index.js",
   "private": true,
   "dependencies": {
     "@bentley/backend-itwin-client": "^2.14.0",
@@ -76,7 +76,7 @@
     "tauri:dev": "tauri dev",
     "start": "run-p \"tauri:dev\" \"start:client\"",
     "start:client": "yarn build:backend && run-p \"start:frontend\"",
-    "build": "yarn build:backend && build:frontend && build:tauri",
+    "build": "yarn build:backend && yarn build:frontend && yarn build:tauri",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "build:backend": "tsc -p tsconfig.backend.json",
@@ -89,7 +89,7 @@
   },
   "pkg": {
     "assets": [
-      "src/**/*"
+      "old-src/**/*"
     ]
   },
   "eslintConfig": {

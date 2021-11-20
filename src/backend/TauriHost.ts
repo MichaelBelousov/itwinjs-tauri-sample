@@ -1,4 +1,4 @@
-// FIXME: REMOVE
+// FIXME: REMOVE ELECTRON IMPORT
 // Note: only import types! Does not create a `require("electron")` in JavaScript after transpiling. That's important so this file can
 // be imported by apps that sometimes use Electron and sometimes not.
 import type {
@@ -380,7 +380,7 @@ let transport: TauriIpcTransport | undefined;
 /** @internal */
 export function initializeIpc(protocol: TauriRpcProtocol) {
   if (undefined === transport)
-    transport = ProcessDetector.isElectronAppFrontend
+    transport = ProcessDetector.isTauriAppFrontend
       ? new FrontendIpcTransport(protocol)
       : new BackendIpcTransport(protocol);
   return transport;
@@ -555,7 +555,7 @@ export class TauriRpcManager extends RpcManager {
     const interfaces = rpcs ?? [
       IModelReadRpcInterface,
       IModelTileRpcInterface,
-      IModelWriteRpcInterface, // eslint-disable-line deprecation/deprecation
+      IModelWriteRpcInterface,
       SnapshotIModelRpcInterface,
       PresentationRpcInterface,
     ];
@@ -651,10 +651,10 @@ export class TauriApp {
   /**
    * Start the frontend of an Electron application.
    * @param opts Options for your ElectronApp
-   * @note This method must only be called from the frontend of an Electron app (i.e. when [ProcessDetector.isElectronAppFrontend]($bentley) is `true`).
+   * @note This method must only be called from the frontend of an Electron app (i.e. when [ProcessDetector.isTauriAppFrontend]($bentley) is `true`).
    */
   public static async startup(opts?: TauriAppOpts) {
-    if (!ProcessDetector.isElectronAppFrontend)
+    if (!ProcessDetector.isTauriAppFrontend)
       throw new Error("Not running under Electron");
     if (!this.isValid) {
       this._ipc = new TauriIpcFrontend();
@@ -751,8 +751,8 @@ export interface ElectronHostOptions {
 }
 
 /** @beta */
-export interface ElectronHostOpts extends NativeHostOpts {
-  electronHost?: ElectronHostOptions;
+export interface TauriHostOpts extends NativeHostOpts {
+  tauriHost?: ElectronHostOptions;
 }
 
 /** @beta */
@@ -774,7 +774,64 @@ export interface WindowSizeAndPositionProps {
 }
 
 /**
- * The backend for Electron-based desktop applications
+ * Options for  [[TauriHost.startup]]
+ * @beta
+ */
+export interface TauriHostOptions {
+  /** the path to find web resources  */
+  webResourcesPath?: string;
+  /** filename for the app's icon, relative to [[webResourcesPath]] */
+  iconName?: string;
+  /** name of frontend url to open.  */
+  frontendURL?: string;
+  /** use a development server rather than the "electron" protocol for loading frontend (see https://www.electronjs.org/docs/api/protocol) */
+  developmentServer?: boolean;
+  /** port number for development server. Default is 3000 */
+  frontendPort?: number;
+  /** list of RPC interface definitions to register */
+  rpcInterfaces?: RpcInterfaceDefinition[];
+  /** list of [IpcHandler]($common) classes to register */
+  ipcHandlers?: typeof IpcHandler[];
+  /** if present, [[NativeHost.authorizationClient]] will be set to an instance of NativeAppAuthorizationBackend and will be initialized. */
+  authConfig?: NativeAppAuthorizationConfiguration;
+  /** if true, do not attempt to initialize AuthorizationClient on startup */
+  noInitializeAuthClient?: boolean;
+  applicationName?: never; // this should be supplied in NativeHostOpts
+}
+
+/** @beta */
+export interface TauriHostOpts extends NativeHostOpts {
+  tauriHost?: TauriHostOptions;
+}
+
+declare module "@bentley/bentleyjs-core" {
+  namespace ProcessDetector {
+    /** Is this process the backend of a Tauri app? */
+    const isTauriAppBackend: boolean;
+    /** Is this process the frontend of a Tauri app? */
+    const isTauriAppFrontend: boolean;
+  }
+}
+
+Object.defineProperty(ProcessDetector.prototype, "isTauriAppBackend", {
+  get() {
+    return (
+      typeof process === "object" && process.versions.hasOwnProperty("electron")
+    );
+  },
+});
+
+Object.defineProperty(ProcessDetector.prototype, "isTauriAppFrontend", {
+  get() {
+    return (
+      typeof navigator === "object" &&
+      navigator.userAgent.toLowerCase().indexOf("tauri") >= 0
+    );
+  },
+});
+
+/**
+ * The backend for Tauri-based desktop applications
  * @beta
  */
 export class TauriHost {
@@ -975,7 +1032,7 @@ export class TauriHost {
    * @param opts Options that control aspects of your backend.
    * @note This method must only be called from the backend of an Electron app (i.e. when [ProcessDetector.isElectronAppBackend]($bentley) is `true`).
    */
-  public static async startup(opts?: ElectronHostOpts) {
+  public static async startup(opts?: TauriHostOpts) {
     if (!ProcessDetector.isElectronAppBackend)
       throw new Error("Not running under Electron");
 
@@ -987,7 +1044,7 @@ export class TauriHost {
         this.electron.protocol.registerSchemesAsPrivileged([
           { scheme: "electron", privileges: { standard: true, secure: true } },
         ]);
-      const eopt = opts?.electronHost;
+      const eopt = opts?.tauriHost;
       this._developmentServer = eopt?.developmentServer ?? false;
       const frontendPort = eopt?.frontendPort ?? 3000;
       this.webResourcesPath = eopt?.webResourcesPath ?? "";
@@ -1012,19 +1069,19 @@ export class TauriHost {
     await NativeHost.startup(opts);
     if (IpcHost.isValid) {
       TauriAppHandler.register();
-      opts.electronHost?.ipcHandlers?.forEach((ipc) => ipc.register());
+      opts.tauriHost?.ipcHandlers?.forEach((ipc) => ipc.register());
     }
 
     const authorizationBackend = new ElectronAuthorizationBackend(
-      opts.electronHost?.authConfig
+      opts.tauriHost?.authConfig
     );
     const connectivityStatus = NativeHost.checkInternetConnectivity();
     if (
-      opts.electronHost?.authConfig &&
-      true !== opts.electronHost?.noInitializeAuthClient &&
+      opts.tauriHost?.authConfig &&
+      true !== opts.tauriHost?.noInitializeAuthClient &&
       connectivityStatus === InternetConnectivityStatus.Online
     )
-      await authorizationBackend.initialize(opts.electronHost?.authConfig);
+      await authorizationBackend.initialize(opts.tauriHost?.authConfig);
 
     IModelHost.authorizationClient = authorizationBackend;
   }

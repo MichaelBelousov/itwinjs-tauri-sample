@@ -1,18 +1,18 @@
-const readline = require('readline')
+const readline = require("readline");
 
 module.exports = {
   onMessage(cb) {
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
-      terminal: false
-    })
+      terminal: false,
+    });
 
-    rl.on('line', function (line) {
-      cb(line)
-    })
+    rl.on("line", function (line) {
+      cb(line);
+    });
   },
   write(message) {
-    console.log(message)
-  }
-}
+    console.log(message);
+  },
+};
