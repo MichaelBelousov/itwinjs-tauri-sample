@@ -1,10 +1,13 @@
 {
+  "package": {
+    "productName": "itwinjs-tauri-test",
+    "version": "0.1.0"
+  },
   "build": {
-    "distDir": ["../index.html"],
-    "devPath": ["../index.html"],
-    "beforeDevCommand": "yarn package",
-    "beforeBuildCommand": "yarn package",
-    "withGlobalTauri": true
+    "distDir": "src",
+    "devPath": "http://localhost:3000",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
   },
   "tauri": {
     "bundle": {
@@ -12,14 +15,14 @@
       "targets": "all",
       "identifier": "com.tauri.dev",
       "icon": [
-        "../../.icons/32x32.png",
-        "../../.icons/128x128.png",
-        "../../.icons/128x128@2x.png",
-        "../../.icons/icon.icns",
-        "../../.icons/icon.ico"
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
       ],
       "resources": [],
-      "externalBin": ["binaries/app"],
+      "externalBin": [],
       "copyright": "",
       "category": "DeveloperTool",
       "shortDescription": "",
@@ -32,18 +35,25 @@
         "frameworks": [],
         "minimumSystemVersion": "",
         "useBootstrapper": false,
-        "exceptionDomain": ""
+        "exceptionDomain": "",
+        "signingIdentity": null,
+        "entitlements": null
+      },
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
       }
     },
+    "updater": {
+      "active": false
+    },
     "allowlist": {
-      "all": false,
-      "shell": {
-        "execute": true
-      }
+      "all": true
     },
     "windows": [
       {
-        "title": "Sidecar",
+        "title": "iTwin.js Tauri Sample",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -51,10 +61,7 @@
       }
     ],
     "security": {
-      "csp": "default-src blob: data: filesystem: ws: wss: http: https: tauri: 'unsafe-eval' 'unsafe-inline' 'self'"
-    },
-    "updater": {
-      "active": false
+      "csp": "default-src blob: data: filesystem: ws: wss: http: https: tauri: 'unsafe-eval' 'unsafe-inline' 'self' img-src: 'self'"
     }
   }
 }
