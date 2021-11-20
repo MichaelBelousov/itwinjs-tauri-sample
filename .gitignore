@@ -94,3 +94,6 @@ __handlers__/
 # benches
 gh-pages
 test_video.mp4
+
+# vim
+.*.sw[op]

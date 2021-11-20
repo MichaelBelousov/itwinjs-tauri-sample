@@ -1,0 +1,15 @@
+{
+  "downloadBriefcase": "Download Briefcase",
+  "openSnapshot": "Open snapshot file",
+  "openLocalBriefcase": "Open local Briefcase",
+  "viewRemoteIModel": "View remote iModel",
+  "home":{
+    "start": "Start",
+    "learn": "Learn",
+    "openRecent": "Open recent",
+    "links": {
+      "viewerComponent": "Learn more about the Viewer component",
+      "customizeViewer": "Learn how to customize your iTwin Viewer"
+    }
+  }
+}
