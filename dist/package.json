@@ -12,6 +12,6 @@
     "scripts": [
       "**/*.js"
     ],
-    "output": "../src-tauri/binaries/app"
+    "outputPath": "../src-tauri/binaries"
   }
 }

@@ -4,7 +4,7 @@
  */
 
 const execa = require("execa");
-const fs = require("fs");
+const fse = require("fs-extra");
 
 let extension = "";
 if (process.platform === "win32") {
@@ -17,13 +17,17 @@ async function main() {
   if (!targetTriple) {
     console.error("Failed to determine platform target triple");
   }
-  fs.renameSync(
+  await fse.rename(
     `src-tauri/binaries/app${extension}`,
     `src-tauri/binaries/app-${targetTriple}${extension}`
   );
   // TODO: should probably be copy...
-  fs.renameSync(`dist/assets`, `src-tauri/binaries/assets`);
-  fs.renameSync(`dist/node_modules`, `src-tauri/binaries/node_modules`);
+  await fse.copy(`dist/assets`, `src-tauri/binaries/assets`, {
+    overwrite: true,
+  });
+  await fse.copy(`dist/node_modules`, `src-tauri/binaries/node_modules`, {
+    overwrite: true,
+  });
 }
 
 main().catch((e) => {

@@ -69,7 +69,9 @@
   "devDependencies": {
     "@bentley/backend-webpack-tools": "^2.14.0",
     "@tauri-apps/cli": "^1.0.0-beta.10",
+    "@types/fs-extra": "^9.0.13",
     "execa": "5.1.1",
+    "fs-extra": "^10.0.0",
     "pkg": "5.2.1",
     "ts-loader": "~8.2.0",
     "webpack-cli": "^3.0.0"
@@ -85,7 +87,7 @@
     "build:backend": "yarn build:backend:webpack && yarn build:tauri",
     "build:backend:webpack": "webpack --config backend.webpack.config.js",
     "build:frontend": "yarn pseudolocalize && react-scripts build",
-    "build:tauri": "pkg dist/package.json",
+    "build:tauri": "pkg dist/package.json --output src-tauri/binaries/app && node scripts/move-binary.js",
     "//build:tauri:prod": "pkg dist/main.js --output src-tauri/binaries/app && node scripts/move-binary.js",
     "electron": "electron lib/backend/main.js",
     "electron:debug": "cross-env NODE_ENV=development electron lib/backend/main.js",
