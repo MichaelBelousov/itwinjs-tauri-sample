@@ -13,7 +13,7 @@ import * as path from "path";
 import { AppLoggerCategory } from "../common/LoggerCategory";
 import { channelName, viewerRpcs } from "../common/ViewerConfig";
 import { appInfo, getAppEnvVar } from "./AppInfo";
-import { TauriHost, TauriHostOptions } from "./TauriHost";
+import { TauriHost, TauriHostOptions } from "../common/TauriHost";
 import ViewerHandler from "./ViewerHandler";
 
 require("dotenv-flow").config(); // eslint-disable-line @typescript-eslint/no-var-requires
@@ -59,17 +59,30 @@ const viewerMain = async () => {
     autoHideMenuBar: false,
   });
 
-  if (process.env.NODE_ENV === "development") {
-    TauriHost.mainWindow?.webContents.toggleDevTools();
-  }
   // add the menu
-  TauriHost.mainWindow?.on("ready-to-show", createMenu);
+  //TauriHost.mainWindow?.on("ready-to-show", createMenu);
 };
 
 const createMenu = () => {
   const isMac = process.platform === "darwin";
 
   const template = [
+    ...(isMac
+      ? [
+          {
+            label: "iTwin Viewer",
+            role: "appMenu",
+            submenu: [
+              {
+                label: "Preferences",
+                click: () => {
+                  IpcHost.send(channelName, "preferences");
+                },
+              },
+            ],
+          },
+        ]
+      : []),
     {
       label: "File",
       submenu: [
@@ -86,9 +99,7 @@ const createMenu = () => {
           },
         },
         { type: "separator" },
-        isMac
-          ? { label: "Close", role: "close" }
-          : { label: "Close", role: "quit" },
+        { label: "Close", role: isMac ? "close" : "quit" },
       ],
     },
     {
@@ -102,42 +113,31 @@ const createMenu = () => {
         },
       ],
     },
+    ...(isMac
+      ? [
+          {
+            label: "Window",
+            submenu: [
+              {
+                label: "Minimize",
+                role: "minimize",
+              },
+              {
+                label: "Zoom",
+                role: "zoom",
+              },
+            ],
+          },
+        ]
+      : []),
   ] as MenuItemConstructorOptions[];
 
-  if (isMac) {
-    template.push({
-      label: "Window",
-      submenu: [
-        {
-          label: "Minimize",
-          role: "minimize",
-        },
-        {
-          label: "Zoom",
-          role: "zoom",
-        },
-      ],
-    });
-    template.unshift({
-      label: "iTwin Viewer",
-      role: "appMenu",
-      submenu: [
-        {
-          label: "Preferences",
-          click: () => {
-            IpcHost.send(channelName, "preferences");
-          },
-        },
-      ],
-    } as MenuItemConstructorOptions);
-  }
-
-  const menu = Menu.buildFromTemplate(template as MenuItemConstructorOptions[]);
+  const menu = Menu.buildFromTemplate(template);
 
   Menu.setApplicationMenu(menu);
-  TauriHost.mainWindow?.setMenuBarVisibility(true);
+  TauriHost.mainWindow.setMenuBarVisibility(true);
   // this is overridden in ElectronHost and set to true so it needs to be...re-overriden??
-  TauriHost.mainWindow?.setAutoHideMenuBar(false);
+  TauriHost.mainWindow.setAutoHideMenuBar(false);
 };
 
 try {

@@ -1,5 +1,3 @@
-import * as fs from "fs";
-import * as path from "path";
 import {
   BeDuration,
   BentleyStatus,
@@ -51,7 +49,7 @@ import {
 } from "@bentley/imodeljs-common";
 import { ElectronAuthorizationBackend } from "@bentley/electron-manager/lib/ElectronBackend";
 import { PresentationRpcInterface } from "@bentley/presentation-common";
-import EventEmitter from "events";
+import { EventEmitter } from "events";
 import type { IpcRendererEvent as ElectronIpcRendererEvent } from "electron";
 
 namespace Tauri {
@@ -269,9 +267,10 @@ export abstract class TauriIpcTransport<
   public sendResponse(message: TOut, evt: any) {
     process.stdin.write(
       JSON.stringify({
+        type: "sendResponse",
         message,
         evt,
-      })
+      }) + "\n"
     );
     const value = this._extractValue(message);
     this._send(message, value, evt);
@@ -567,9 +566,10 @@ class TauriIpcBackend implements IpcSocketBackend {
   public send(channel: string, ...args: any[]): void {
     process.stdin.write(
       JSON.stringify({
+        type: "ipc",
         channel,
         args,
-      })
+      }) + "\n"
     );
   }
   public handle(
@@ -584,6 +584,7 @@ class TauriIpcBackend implements IpcSocketBackend {
 
 type TauriListener = (event: Tauri.IpcRendererEvent, ...args: any[]) => void;
 
+// FIXME: not true the preload is no longer used!
 /** These methods are stored on `window.itwinjs` */
 export interface ITwinTauriApi {
   addListener: (channel: string, listener: TauriListener) => void;
@@ -597,24 +598,52 @@ export interface ITwinTauriApi {
 }
 
 class TauriIpcFrontend implements IpcSocketFrontend {
-  private _api: ITwinTauriApi;
+  private static checkPrefix(channel: string) {
+    if (!channel.startsWith("itwin."))
+      throw new Error(`illegal channel name '${channel}'`);
+  }
+  // NOTE: this replaces the electron preload script
+  private api = (() =>
+    new (class extends EventEmitter implements ITwinTauriApi {
+      send(channel: string, ...data: any[]) {
+        TauriIpcFrontend.checkPrefix(channel);
+        process.stdout.write(
+          JSON.stringify({ type: "ipcRenderer.send", channel, args: data }) +
+            "\n"
+        );
+      }
+      public override addListener(channel: string, listener: TauriListener) {
+        TauriIpcFrontend.checkPrefix(channel);
+        return super.addListener(channel, listener);
+      }
+      public override removeListener(channel: string, listener: TauriListener) {
+        TauriIpcFrontend.checkPrefix(channel);
+        return super.removeListener(channel, listener);
+      }
+      public override once(channel: string, listener: TauriListener) {
+        TauriIpcFrontend.checkPrefix(channel);
+        return super.once(channel, listener);
+      }
+      async invoke(channel: string, ...data: any[]): Promise<any> {
+        TauriIpcFrontend.checkPrefix(channel);
+        process.stdout.write(
+          JSON.stringify({ type: "ipcRenderer.invoke", channel, args: data }) +
+            "\n"
+        );
+      }
+    })())();
   public addListener(channelName: string, listener: IpcListener) {
-    this._api.addListener(channelName, listener);
-    return () => this._api.removeListener(channelName, listener);
+    this.api.addListener(channelName, listener);
+    return () => this.api.removeListener(channelName, listener);
   }
   public removeListener(channelName: string, listener: IpcListener) {
-    this._api.removeListener(channelName, listener);
+    this.api.removeListener(channelName, listener);
   }
   public send(channel: string, ...data: any[]) {
-    this._api.send(channel, ...data);
+    this.api.send(channel, ...data);
   }
   public async invoke(channel: string, ...args: any[]) {
-    return this._api.invoke(channel, ...args);
-  }
-  constructor() {
-    // use the methods on window.itwinjs exposed by ElectronPreload.ts, or ipcRenderer directly if running with nodeIntegration=true (**only** for tests).
-    // Note that `require("electron")` doesn't work with nodeIntegration=false - that's what it stops
-    this._api = (window as any).itwinjs ?? require("electron").ipcRenderer; // eslint-disable-line @typescript-eslint/no-var-requires
+    return this.api.invoke(channel, ...args);
   }
 }
 
@@ -658,6 +687,7 @@ export class TauriApp {
    * Call an asynchronous method in the [Electron.Dialog](https://www.electronjs.org/docs/api/dialog) interface from a previously initialized ElectronFrontend.
    * @param methodName the name of the method to call
    * @param args arguments to method
+   * @deprecated
    */
   public static async callDialog<T extends AsyncMethodsOf<Electron.Dialog>>(
     methodName: T,
@@ -675,6 +705,7 @@ export class TauriApp {
    * Call an asynchronous method in the [Electron.shell](https://www.electronjs.org/docs/api/shell) interface from a previously initialized ElectronFrontend.
    * @param methodName the name of the method to call
    * @param args arguments to method
+   * @deprecated
    */
   public static async callShell<T extends AsyncMethodsOf<Electron.Shell>>(
     methodName: T,
@@ -692,6 +723,7 @@ export class TauriApp {
    * Call an asynchronous method in the [Electron.app](https://www.electronjs.org/docs/api/app) interface from a previously initialized ElectronFrontend.
    * @param methodName the name of the method to call
    * @param args arguments to method
+   * @deprecated
    */
   public static async callApp<T extends AsyncMethodsOf<Electron.App>>(
     methodName: T,
@@ -708,10 +740,10 @@ export class TauriApp {
 }
 
 /**
- * Options for  [[ElectronHost.startup]]
+ * Options for  [[TauriHost.startup]]
  * @beta
  */
-export interface ElectronHostOptions {
+export interface TauriHostOptions {
   /** the path to find web resources  */
   webResourcesPath?: string;
   /** filename for the app's icon, relative to [[webResourcesPath]] */
@@ -735,7 +767,7 @@ export interface ElectronHostOptions {
 
 /** @beta */
 export interface TauriHostOpts extends NativeHostOpts {
-  tauriHost?: ElectronHostOptions;
+  tauriHost?: TauriHostOptions;
 }
 
 /** @beta */
@@ -818,12 +850,31 @@ Object.defineProperty(ProcessDetector, "isTauriAppFrontend", {
  */
 export class TauriHost {
   private static _ipc: TauriIpcBackend;
-  private static _developmentServer: boolean;
-  private static _electronFrontend = "electron://frontend/";
-  private static _mainWindow?: Tauri.BrowserWindow;
-  public static webResourcesPath: string;
-  public static appIconPath: string;
-  public static frontendURL: string;
+
+  public static mainWindow = (() => {
+    return new (class extends EventEmitter {
+      public getSize(): [number, number] {
+        process.stdout.write(
+          JSON.stringify({
+            message: "TauriHost.mainWindow.getSize",
+          })
+        );
+        //return this.on("reply");
+        return [1, 1];
+      }
+      public getPosition(): [number, number] {
+        process.stdout.write(
+          JSON.stringify({
+            message: "TauriHost.mainWindow.getPosition",
+          })
+        );
+        //return this.on("reply");
+        return [0, 0];
+      }
+      public setMenuBarVisibility(_b: boolean) {}
+      public setAutoHideMenuBar(_b: boolean) {}
+    })();
+  })();
   public static rpcConfig: RpcConfiguration;
 
   public static ipcMain = (() => {
@@ -831,7 +882,9 @@ export class TauriHost {
       public handle(channel: string, listener: (...args: any[]) => any) {
         this.addListener(channel, listener);
       }
-      public removeHandler(channel: string) {}
+      public removeHandler(channel: string) {
+        this.removeAllListeners(channel);
+      }
     })();
   })();
 
@@ -840,7 +893,7 @@ export class TauriHost {
       public handle(channel: string, listener: (...args: any[]) => any) {
         this.addListener(channel, listener);
       }
-      public removeHandler(channel: string) {}
+      public removeHandler(_channel: string) {}
       public quit() {}
     })();
   })();
@@ -849,15 +902,12 @@ export class TauriHost {
     getAllWindows(): Tauri.BrowserWindow[] {
       return [];
     },
-    BrowserWindow: (() => {
-      const tauriHostThisAlias = this;
-      return class BrowserWindow implements Tauri.BrowserWindow {
-        public constructor(opts: Tauri.BrowserWindowConstructorOptions) {}
-        static getAllWindows() {
-          tauriHostThisAlias.tauri.getAllWindows();
-        }
-      };
-    })(),
+    BrowserWindow: class BrowserWindow implements Tauri.BrowserWindow {
+      public constructor(_opts: Tauri.BrowserWindowConstructorOptions) {}
+      static getAllWindows() {
+        TauriHost.tauri.getAllWindows();
+      }
+    },
   };
 
   /** @internal */
@@ -868,10 +918,9 @@ export class TauriHost {
   private constructor() {}
 
   private static _openWindow(options?: TauriHostWindowOptions) {
-    const opts: Tauri.BrowserWindowConstructorOptions = {
+    const _opts: Tauri.BrowserWindowConstructorOptions = {
       ...options,
       autoHideMenuBar: true,
-      icon: this.appIconPath,
       webPreferences: {
         ...options?.webPreferences,
 
@@ -891,18 +940,12 @@ export class TauriHost {
       },
     };
 
-    this._mainWindow = new this.tauri.BrowserWindow(opts);
-    TauriRpcConfiguration.targetWindowId = this._mainWindow.id;
-    this._mainWindow.on("closed", () => (this._mainWindow = undefined));
-    this._mainWindow.loadURL(this.frontendURL); // eslint-disable-line @typescript-eslint/no-floating-promises
-
     /** Monitors and saves main window size, position and maximized state */
     if (options?.storeWindowName) {
-      const mainWindow = this._mainWindow;
       const name = options.storeWindowName;
       const saveWindowPosition = () => {
-        const resolution = mainWindow.getSize();
-        const position = mainWindow.getPosition();
+        const resolution = this.mainWindow.getSize();
+        const position = this.mainWindow.getPosition();
         const pos: WindowSizeAndPositionProps = {
           width: resolution[0],
           height: resolution[1],
@@ -919,16 +962,11 @@ export class TauriHost {
         NativeHost.settingsStore.setData(`windowMaximized-${name}`, maximized);
       };
 
-      mainWindow.on("resized", () => saveWindowPosition());
-      mainWindow.on("moved", () => saveWindowPosition());
-      mainWindow.on("maximize", () => saveMaximized(true));
-      mainWindow.on("unmaximize", () => saveMaximized(false));
+      this.mainWindow.on("resized", () => saveWindowPosition());
+      this.mainWindow.on("moved", () => saveWindowPosition());
+      this.mainWindow.on("maximize", () => saveMaximized(true));
+      this.mainWindow.on("unmaximize", () => saveMaximized(false));
     }
-  }
-
-  /** The "main" BrowserWindow for this application. */
-  public static get mainWindow() {
-    return this._mainWindow;
   }
 
   /** Gets window size and position for a window, by name, from settings file, if present */
@@ -955,33 +993,24 @@ export class TauriHost {
   public static async openMainWindow(
     windowOptions?: TauriHostWindowOptions
   ): Promise<void> {
-    const app = this.app;
-    // quit the application when all windows are closed (unless we're running on MacOS)
-    app.on("window-all-closed", () => {
-      if (process.platform !== "darwin") app.quit();
-    });
-
-    // re-open the main window if it was closed and the app is re-activated (this is the normal MacOS behavior)
-    app.on("activate", () => {
-      if (!this._mainWindow) this._openWindow(windowOptions);
-    });
-
-    if (this._developmentServer) {
+    // replace with tauri equivalent
+    const _developmentServer = false;
+    if (_developmentServer) {
       // Occasionally, the electron backend may start before the webpack devserver has even started.
       // If this happens, we'll just retry and keep reloading the page.
-      app.on("web-contents-created", (_e, webcontents) => {
+      this.app.on("web-contents-created", (_e, webcontents) => {
         webcontents.on(
           "did-fail-load",
           async (
-            _event,
-            errorCode,
-            _errorDescription,
-            _validatedURL,
-            isMainFrame
+            _event: any,
+            errorCode: any,
+            _errorDescription: any,
+            _validatedURL: any,
+            isMainFrame: any
           ) => {
             // errorCode -102 is CONNECTION_REFUSED - see https://cs.chromium.org/chromium/src/net/base/net_error_list.h
             if (isMainFrame && errorCode === -102) {
-              await BeDuration.wait(100);
+              await BeDuration.wait(500);
               webcontents.reload();
             }
           }
@@ -1009,22 +1038,9 @@ export class TauriHost {
 
     if (!this.isValid) {
       this._ipc = new TauriIpcBackend();
-      const eopt = opts?.tauriHost;
-      this._developmentServer = eopt?.developmentServer ?? false;
-      const frontendPort = eopt?.frontendPort ?? 3000;
-      this.webResourcesPath = eopt?.webResourcesPath ?? "";
-      this.frontendURL =
-        eopt?.frontendURL ??
-        (this._developmentServer
-          ? `http://localhost:${frontendPort}`
-          : `${this._electronFrontend}index.html`);
-      this.appIconPath = path.join(
-        this.webResourcesPath,
-        eopt?.iconName ?? "appicon.ico"
-      );
       this.rpcConfig = TauriRpcManager.initializeBackend(
         this._ipc,
-        eopt?.rpcInterfaces
+        opts?.tauriHost?.rpcInterfaces
       );
     }
 
@@ -1052,6 +1068,7 @@ export class TauriHost {
   }
 }
 
+/** @deprecated */
 class TauriAppHandler extends IpcHandler {
   public get channelName() {
     return "electron-safe";
