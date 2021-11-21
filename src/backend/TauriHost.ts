@@ -68,14 +68,14 @@ const PUSH = "__push__";
 
 /** @internal */
 export class TauriPushTransport extends RpcPushTransport {
-  private _ipc: FrontendIpcTransport;
+  private _ipc: TauriFrontendIpcTransport;
   private _last: number = -1;
 
   public get last() {
     return this._last;
   }
 
-  public constructor(ipc: FrontendIpcTransport) {
+  public constructor(ipc: TauriFrontendIpcTransport) {
     super();
     this._ipc = ipc;
   }
@@ -101,13 +101,13 @@ export class TauriPushTransport extends RpcPushTransport {
 
 /** @internal */
 export class TauriPushConnection<T> extends RpcPushConnection<T> {
-  private _ipc: BackendIpcTransport;
+  private _ipc: TauriBackendIpcTransport;
   private _next: number = -1;
 
   public constructor(
     channel: RpcPushChannel<T>,
     client: unknown,
-    ipc: BackendIpcTransport
+    ipc: TauriBackendIpcTransport
   ) {
     super(channel, client);
     this._ipc = ipc;
@@ -150,24 +150,17 @@ export abstract class TauriIpcTransport<
   TIn extends IpcTransportMessage = IpcTransportMessage,
   TOut extends IpcTransportMessage = IpcTransportMessage
 > {
-  private _partials: Map<
+  private _partials = new Map<
     string,
     { message: TIn; received: number } | PartialPayload[]
-  >;
-  protected _protocol: TauriRpcProtocol;
-
-  public get protocol() {
-    return this._protocol;
-  }
+  >();
 
   public sendRequest(request: SerializedRpcRequest) {
     const value = this._extractValue(request);
     this._send(request, value);
   }
 
-  public constructor(protocol: TauriRpcProtocol) {
-    this._protocol = protocol;
-    this._partials = new Map();
+  public constructor(public readonly protocol: TauriRpcProtocol) {
     this._setupDataChannel();
     this._setupObjectsChannel();
     this.setupPush();
@@ -299,7 +292,7 @@ export abstract class TauriIpcTransport<
 }
 
 /** @internal */
-export class FrontendIpcTransport extends TauriIpcTransport<RpcRequestFulfillment> {
+export class TauriFrontendIpcTransport extends TauriIpcTransport<RpcRequestFulfillment> {
   private _pushTransport?: TauriPushTransport;
 
   protected override setupPush() {
@@ -315,14 +308,13 @@ export class FrontendIpcTransport extends TauriIpcTransport<RpcRequestFulfillmen
       return;
     }
 
-    const protocol = this._protocol;
-    const request = protocol.requests.get(message.id) as TauriRpcRequest;
+    const request = this.protocol.requests.get(message.id) as TauriRpcRequest;
     request.notifyResponse(message);
   }
 }
 
 /** @internal */
-export class BackendIpcTransport extends TauriIpcTransport<
+export class TauriBackendIpcTransport extends TauriIpcTransport<
   SerializedRpcRequest,
   RpcRequestFulfillment
 > {
@@ -339,8 +331,7 @@ export class BackendIpcTransport extends TauriIpcTransport<
 
     let response: RpcRequestFulfillment;
     try {
-      const protocol = this._protocol;
-      response = await protocol.fulfill(message);
+      response = await this.protocol.fulfill(message);
     } catch (err) {
       response = await RpcRequestFulfillment.forUnknownError(message, err);
     }
@@ -390,8 +381,8 @@ let transport: TauriIpcTransport | undefined;
 export function initializeIpc(protocol: TauriRpcProtocol) {
   if (undefined === transport)
     transport = ProcessDetector.isTauriAppFrontend
-      ? new FrontendIpcTransport(protocol)
-      : new BackendIpcTransport(protocol);
+      ? new TauriFrontendIpcTransport(protocol)
+      : new TauriBackendIpcTransport(protocol);
   return transport;
 }
 
@@ -402,7 +393,7 @@ export class TauriRpcRequest extends RpcRequest {
 
   /** Convenience access to the protocol of this request. */
   public override readonly protocol: TauriRpcProtocol = this.client
-    .configuration.protocol as any;
+    .configuration.protocol as TauriRpcProtocol;
 
   /** Sends the request. */
   protected async send() {
@@ -449,6 +440,7 @@ export class TauriRpcRequest extends RpcRequest {
     super.dispose();
   }
 }
+
 /** RPC interface protocol for an Tauri-based application.
  * @beta
  */
