@@ -347,31 +347,11 @@ export class TauriBackendIpcTransport extends TauriIpcTransport<
       return super.performSend(channel, message, evt);
     }
 
-    this._requireBrowserWindow();
     const target = TauriRpcConfiguration.targetWindowId;
     const windows = target
       ? [this._browserWindow.fromId(target)]
       : this._browserWindow.getAllWindows();
     windows.forEach((window: any) => window.webContents.send(channel, message));
-  }
-
-  private _requireBrowserWindow() {
-    if (this._browserWindow) {
-      return;
-    }
-
-    try {
-      // Wrapping require in a try/catch signals to webpack that this is only an optional dependency
-      this._browserWindow = require("electron").BrowserWindow; // eslint-disable-line @typescript-eslint/no-var-requires
-    } catch (err) {
-      throw new IModelError(
-        BentleyStatus.ERROR,
-        `Error requiring electron`,
-        undefined,
-        undefined,
-        () => err
-      );
-    }
   }
 }
 
