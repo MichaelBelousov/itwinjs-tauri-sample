@@ -274,6 +274,12 @@ export abstract class TauriIpcTransport<
 
   /** @internal */
   public sendResponse(message: TOut, evt: any) {
+    process.stdin.write(
+      JSON.stringify({
+        message,
+        evt,
+      })
+    );
     const value = this._extractValue(message);
     this._send(message, value, evt);
   }
@@ -587,9 +593,12 @@ class TauriIpcBackend implements IpcSocketBackend {
     TauriHost.ipcMain.removeListener(channel, listener);
   }
   public send(channel: string, ...args: any[]): void {
-    const window =
-      TauriHost.mainWindow ?? TauriHost.tauri.BrowserWindow.getAllWindows()[0];
-    window?.webContents.send(channel, ...args);
+    process.stdin.write(
+      JSON.stringify({
+        channel,
+        args,
+      })
+    );
   }
   public handle(
     channel: string,
@@ -844,37 +853,26 @@ export class TauriHost {
   public static appIconPath: string;
   public static frontendURL: string;
   public static rpcConfig: RpcConfiguration;
+
   public static ipcMain = (() => {
-    return {
-      _emitter: new EventEmitter(),
-      get addListener() {
-        return this._emitter.addEventListener;
-      },
-      get removeListener() {
-        return this._emitter.removeEventListener;
-      },
-      get on() {
-        return this._emitter.on;
-      },
-      handle(channel: string, listener: any) {},
-      removeHandler(channel: string) {},
-    };
+    return new (class extends EventEmitter {
+      public handle(channel: string, listener: (...args: any[]) => any) {
+        this.addListener(channel, listener);
+      }
+      public removeHandler(channel: string) {}
+    })();
   })();
+
   public static app = (() => {
-    return {
-      _emitter: new EventEmitter(),
-      get addListener() {
-        return this._emitter.addEventListener;
-      },
-      get removeListener() {
-        return this._emitter.removeEventListener;
-      },
-      get on() {
-        return this._emitter.on;
-      },
-      quit() {},
-    };
+    return new (class extends EventEmitter {
+      public handle(channel: string, listener: (...args: any[]) => any) {
+        this.addListener(channel, listener);
+      }
+      public removeHandler(channel: string) {}
+      public quit() {}
+    })();
   })();
+
   public static tauri = {
     getAllWindows(): Tauri.BrowserWindow[] {
       return [];
@@ -896,33 +894,6 @@ export class TauriHost {
   }
 
   private constructor() {}
-
-  /**
-   * Converts an "electron://frontend/" URL to an absolute file path.
-   *
-   * We use this protocol in production builds because our frontend must be built with absolute URLs,
-   * however, since we're loading everything directly from the install directory, we cannot know the
-   * absolute path at build time.
-   */
-  private static parseElectronUrl(requestedUrl: string): string {
-    // Note that the "frontend/" path is arbitrary - this is just so we can handle *some* relative URLs...
-    let assetPath = requestedUrl.substr(this._electronFrontend.length);
-    if (assetPath.length === 0) assetPath = "index.html";
-    assetPath = path.normalize(`${this.webResourcesPath}/${assetPath}`);
-    // File protocols don't follow symlinks, so we need to resolve this to a real path.
-    // However, if the file doesn't exist, it's fine to return an invalid path here - the request will just fail with net::ERR_FILE_NOT_FOUND
-    try {
-      assetPath = fs.realpathSync(assetPath);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      // console.warn(`WARNING: Frontend requested "${requestedUrl}", but ${assetPath} does not exist`);
-    }
-    if (!assetPath.startsWith(this.webResourcesPath))
-      throw new Error(
-        `Access to files outside installation directory (${this.webResourcesPath}) is prohibited`
-      );
-    return assetPath;
-  }
 
   private static _openWindow(options?: TauriHostWindowOptions) {
     const opts: Tauri.BrowserWindowConstructorOptions = {
