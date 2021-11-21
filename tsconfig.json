@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "es5",
     "lib": [
       "dom",
@@ -28,6 +29,7 @@
     "build",
     "lib",
     "node_modules",
+    "dist",
     "./src/backend/**/*.ts"
   ]
 }

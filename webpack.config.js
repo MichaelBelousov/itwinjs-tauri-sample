@@ -2,10 +2,16 @@ const path = require("path");
 
 /** @type {import("webpack").Configuration} */
 module.exports = {
-  entry: "./lib/backend/main.js",
+  mode: process.env.NODE_ENV,
+  entry: "./src/backend/main.ts",
   output: {
     filename: "main.js",
     path: path.resolve(__dirname, "dist"),
   },
   target: "node",
+  /*
+  optimization: {
+    minimize: process.env.NODE_ENV === "production",
+  },
+  */
 };

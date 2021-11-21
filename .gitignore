@@ -120,3 +120,6 @@ test_video.mp4
 
 # ignored backups
 *.bak
+
+# tauri binaries
+src-tauri/binaries

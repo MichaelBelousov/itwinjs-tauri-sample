@@ -26,9 +26,9 @@ class ViewerHandler extends IpcHandler implements ViewerIpc {
    * @returns Promise<ViewerConfig>
    */
   public async getConfig(): Promise<ViewerConfig> {
-    const parsedArgs = minimist(process.argv.slice(2)); // first two arguments are .exe name and the path to ViewerMain.js. Skip them.
+    //const parsedArgs = minimist(process.argv.slice(2)); // first two arguments are .exe name and the path to ViewerMain.js. Skip them.
     return {
-      snapshotName: parsedArgs._[0] ?? getAppEnvVar("SNAPSHOT"),
+      snapshotName: getAppEnvVar("SNAPSHOT"),
       clientId: getAppEnvVar("CLIENT_ID") ?? "",
       redirectUri: getAppEnvVar("REDIRECT_URI") ?? "",
       issuerUrl: getAppEnvVar("ISSUER_URL"),

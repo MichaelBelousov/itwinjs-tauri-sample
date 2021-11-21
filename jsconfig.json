@@ -1,7 +1,0 @@
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "module": "CommonJS"
-  },
-  "exclude": ["node_modules", "dist"]
-}
