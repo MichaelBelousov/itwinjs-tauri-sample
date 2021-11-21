@@ -13,6 +13,7 @@ const imjsWebpackCfg = getWebpackConfig(
 function getBackendWebpackConfig() {
   return {
     ...imjsWebpackCfg,
+    // have to override output which will be incorrect main.ts
     output: {
       ...imjsWebpackCfg.output,
       filename: "main.js",
@@ -32,10 +33,18 @@ function getBackendWebpackConfig() {
               /** @type {import("ts-loader").Options} */
               options: {
                 configFile: "tsconfig.backend.json",
+                // not ideal, but I'm too lazy to figure out how to properly webpack@4 it
+                allowTsInNodeModules: true,
               },
             },
           ],
-          exclude: /node_modules/,
+          // tauri-apps
+          //exclude: /node_modules(?!=\/@tauri-apps\/api)/,
+          include: [
+            path.resolve(__dirname, "./src"),
+            path.resolve(__dirname, "node_modules/@tauri-apps/api"),
+          ],
+          //exclude: /node_modules/,
         },
       ],
     },
