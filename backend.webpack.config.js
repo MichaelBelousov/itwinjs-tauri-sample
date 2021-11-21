@@ -3,18 +3,24 @@ const {
   getWebpackConfig,
 } = require("@bentley/backend-webpack-tools/config/getWebpackConfig");
 
+const imjsWebpackCfg = getWebpackConfig(
+  path.resolve(__dirname, "./src/backend/main.ts"), // entry
+  path.resolve(__dirname, "./dist"),
+  false
+);
+
 /** @returns {import("webpack").Configuration} */
 function getBackendWebpackConfig() {
   return {
-    ...getWebpackConfig(
-      path.resolve(__dirname, "./src/backend/main.ts"), // entry
-      path.resolve(__dirname, "./dist"),
-      false
-    ),
+    ...imjsWebpackCfg,
+    output: {
+      ...imjsWebpackCfg.output,
+      filename: "main.js",
+    },
     watchOptions: {
       ignored: "**/node_modules",
     },
-    mode: process.env.NODE_ENV,
+    mode: process.env.NODE_ENV || "development",
     resolve: { extensions: [".ts", ".js"] },
     module: {
       rules: [

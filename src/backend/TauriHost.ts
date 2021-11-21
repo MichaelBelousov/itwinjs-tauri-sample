@@ -6,6 +6,8 @@ import type {
   BrowserWindowConstructorOptions,
   IpcRendererEvent,
 } from "electron";
+// should really only import this on the frontend...?
+//import TauriApi from "@tauri-apps/api";
 import * as fs from "fs";
 import * as path from "path";
 import {
@@ -28,7 +30,6 @@ import {
   NativeAppOpts,
   PromiseReturnType,
 } from "@bentley/imodeljs-frontend";
-//import { IModelError, InternetConnectivityStatus, IpcListener, IpcSocketBackend, NativeAppAuthorizationConfiguration, RemoveFunction, RpcConfiguration, RpcInterfaceDefinition } from "@bentley/imodeljs-common";
 import {
   IModelReadRpcInterface,
   IModelTileRpcInterface,
@@ -813,20 +814,19 @@ declare module "@bentley/bentleyjs-core" {
   }
 }
 
-Object.defineProperty(ProcessDetector.prototype, "isTauriAppBackend", {
+Object.defineProperty(ProcessDetector, "isTauriAppBackend", {
   get() {
     return (
-      typeof process === "object" && process.versions.hasOwnProperty("electron")
+      // right now it's tauri because I say so
+      true
+      //typeof process === "object" && process.versions.hasOwnProperty("electron")
     );
   },
 });
 
-Object.defineProperty(ProcessDetector.prototype, "isTauriAppFrontend", {
+Object.defineProperty(ProcessDetector, "isTauriAppFrontend", {
   get() {
-    return (
-      typeof navigator === "object" &&
-      navigator.userAgent.toLowerCase().indexOf("tauri") >= 0
-    );
+    return "__TAURI__" in window;
   },
 });
 
@@ -1035,8 +1035,8 @@ export class TauriHost {
    * @note This method must only be called from the backend of an Electron app (i.e. when [ProcessDetector.isElectronAppBackend]($bentley) is `true`).
    */
   public static async startup(opts?: TauriHostOpts) {
-    if (!ProcessDetector.isElectronAppBackend)
-      throw new Error("Not running under Electron");
+    if (!ProcessDetector.isTauriAppBackend)
+      throw new Error("Not running under Tauri");
 
     if (!this.isValid) {
       this._electron = require("electron");

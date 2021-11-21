@@ -4,10 +4,10 @@
     "version": "0.1.0"
   },
   "build": {
-    "distDir": "dist",
+    "distDir": "../dist",
     "devPath": "http://localhost:3000",
-    "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "beforeDevCommand": "yarn build:tauri",
+    "beforeBuildCommand": "yarn build:tauri"
   },
   "tauri": {
     "bundle": {
@@ -22,7 +22,7 @@
         "icons/icon.ico"
       ],
       "resources": [],
-      "externalBin": [],
+      "externalBin": ["binaries/app"],
       "copyright": "",
       "category": "DeveloperTool",
       "shortDescription": "",

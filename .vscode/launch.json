@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "Launch compiled backend",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/dist/main.js",
+      "outFiles": ["${workspaceFolder}/dist/*.js"]
+    }
+  ]
+}

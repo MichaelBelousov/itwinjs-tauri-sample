@@ -37,6 +37,15 @@
 
     You can add webfonts, meta tags, or analytics to this file.
   -->
+  <div id="tauri-test">test!</div>
+  <script>
+    const tauriTest = document.querySelector('#tauri-test')
+    window.__TAURI__.event.listen('message', (event) => {
+      const p = document.createElement('p')
+      p.innerHTML = event.payload
+      tauriTest.appendChild(p)
+    })
+  </script>
 </body>
 
 </html>
