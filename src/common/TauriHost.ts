@@ -51,6 +51,8 @@ import { ElectronAuthorizationBackend } from "@bentley/electron-manager/lib/Elec
 import { PresentationRpcInterface } from "@bentley/presentation-common";
 import { EventEmitter } from "events";
 import type { IpcRendererEvent as ElectronIpcRendererEvent } from "electron";
+// TODO: split into frontend-only import
+import * as TauriApi from "@tauri-apps/api";
 
 namespace Tauri {
   export interface BrowserWindow
@@ -265,7 +267,7 @@ export abstract class TauriIpcTransport<
 
   /** @internal */
   public sendResponse(message: TOut, evt: any) {
-    process.stdin.write(
+    process.stdout.write(
       JSON.stringify({
         type: "sendResponse",
         message,
@@ -564,7 +566,7 @@ class TauriIpcBackend implements IpcSocketBackend {
     TauriHost.ipcMain.removeListener(channel, listener);
   }
   public send(channel: string, ...args: any[]): void {
-    process.stdin.write(
+    process.stdout.write(
       JSON.stringify({
         type: "ipc",
         channel,
@@ -602,15 +604,17 @@ class TauriIpcFrontend implements IpcSocketFrontend {
     if (!channel.startsWith("itwin."))
       throw new Error(`illegal channel name '${channel}'`);
   }
+
   // NOTE: this replaces the electron preload script
   private api = (() =>
     new (class extends EventEmitter implements ITwinTauriApi {
       send(channel: string, ...data: any[]) {
         TauriIpcFrontend.checkPrefix(channel);
-        process.stdout.write(
-          JSON.stringify({ type: "ipcRenderer.send", channel, args: data }) +
-            "\n"
-        );
+        TauriApi.invoke("ipcRenderer.send", {
+          type: "ipcRenderer.send",
+          channel,
+          args: data,
+        });
       }
       public override addListener(channel: string, listener: TauriListener) {
         TauriIpcFrontend.checkPrefix(channel);
@@ -626,12 +630,14 @@ class TauriIpcFrontend implements IpcSocketFrontend {
       }
       async invoke(channel: string, ...data: any[]): Promise<any> {
         TauriIpcFrontend.checkPrefix(channel);
-        process.stdout.write(
-          JSON.stringify({ type: "ipcRenderer.invoke", channel, args: data }) +
-            "\n"
-        );
+        TauriApi.invoke("ipcRenderer.invoke", {
+          type: "ipcRenderer.invoke",
+          channel,
+          args: data,
+        });
       }
     })())();
+
   public addListener(channelName: string, listener: IpcListener) {
     this.api.addListener(channelName, listener);
     return () => this.api.removeListener(channelName, listener);
@@ -853,23 +859,13 @@ export class TauriHost {
 
   public static mainWindow = (() => {
     return new (class extends EventEmitter {
-      public getSize(): [number, number] {
-        process.stdout.write(
-          JSON.stringify({
-            message: "TauriHost.mainWindow.getSize",
-          })
-        );
-        //return this.on("reply");
-        return [1, 1];
+      public async getSize(): Promise<[number, number]> {
+        const size = await TauriApi.window.getCurrent().innerSize();
+        return [size.width, size.height];
       }
-      public getPosition(): [number, number] {
-        process.stdout.write(
-          JSON.stringify({
-            message: "TauriHost.mainWindow.getPosition",
-          })
-        );
-        //return this.on("reply");
-        return [0, 0];
+      public async getPosition(): Promise<[number, number]> {
+        const pos = await TauriApi.window.getCurrent().innerPosition();
+        return [pos.x, pos.y];
       }
       public setMenuBarVisibility(_b: boolean) {}
       public setAutoHideMenuBar(_b: boolean) {}
@@ -917,7 +913,7 @@ export class TauriHost {
 
   private constructor() {}
 
-  private static _openWindow(options?: TauriHostWindowOptions) {
+  private static async _openWindow(options?: TauriHostWindowOptions) {
     const _opts: Tauri.BrowserWindowConstructorOptions = {
       ...options,
       autoHideMenuBar: true,
@@ -943,9 +939,9 @@ export class TauriHost {
     /** Monitors and saves main window size, position and maximized state */
     if (options?.storeWindowName) {
       const name = options.storeWindowName;
-      const saveWindowPosition = () => {
-        const resolution = this.mainWindow.getSize();
-        const position = this.mainWindow.getPosition();
+      const saveWindowPosition = async () => {
+        const resolution = await this.mainWindow.getSize();
+        const position = await this.mainWindow.getPosition();
         const pos: WindowSizeAndPositionProps = {
           width: resolution[0],
           height: resolution[1],
@@ -957,8 +953,8 @@ export class TauriHost {
           JSON.stringify(pos)
         );
       };
-      const saveMaximized = (maximized: boolean) => {
-        if (!maximized) saveWindowPosition();
+      const saveMaximized = async (maximized: boolean) => {
+        if (!maximized) await saveWindowPosition();
         NativeHost.settingsStore.setData(`windowMaximized-${name}`, maximized);
       };
 
@@ -1018,7 +1014,7 @@ export class TauriHost {
       });
     }
 
-    this._openWindow(windowOptions);
+    await this._openWindow(windowOptions);
   }
 
   public static get isValid() {
