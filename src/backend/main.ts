@@ -29,12 +29,12 @@ const viewerMain = async () => {
     (await fs.promises.readdir(process.cwd()))
       .map((fileName) => /itwin-sidecar_(?<num>\d+)\.log/.exec(fileName))
       .filter((match): match is RegExpExecArray => match !== null)
-      .map((match) => parseInt(match.groups.num))
+      .map((match) => parseInt(match.groups!.num))
       // get the last number
       .sort((a, b) => b - a)[0] ?? 0;
   const logFile = await fs.promises.open(
     `itwin-sidecar_${latestLogFileNum + 1}.log`,
-    "r+"
+    "wx"
   );
   Logger.initialize(
     (category, message, getMetaData) =>

@@ -85,18 +85,12 @@
     "build:backend": "yarn build:backend:webpack && yarn build:tauri",
     "build:backend:webpack": "webpack --config backend.webpack.config.js",
     "build:frontend": "yarn pseudolocalize && react-scripts build",
-    "build:tauri": "pkg dist/main.js --output src-tauri/binaries/app --no-bytecode --public-packages '*' && node scripts/move-binary.js",
-    "build:tauri:prod": "pkg dist/main.js --output src-tauri/binaries/app && node scripts/move-binary.js",
+    "build:tauri": "pkg dist/package.json",
+    "//build:tauri:prod": "pkg dist/main.js --output src-tauri/binaries/app && node scripts/move-binary.js",
     "electron": "electron lib/backend/main.js",
     "electron:debug": "cross-env NODE_ENV=development electron lib/backend/main.js",
     "start:frontend": "react-scripts start",
     "pseudolocalize": "betools pseudolocalize --englishDir ./public/locales/en --out ./public/locales/en-PSEUDO"
-  },
-  "pkg": {
-    "assets": [
-      "dist/assets/**/*",
-      "dist/node_modules/@bentley/imodeljs-native/imodeljs-linux-x64/**/*"
-    ]
   },
   "eslintConfig": {
     "extends": "react-app"

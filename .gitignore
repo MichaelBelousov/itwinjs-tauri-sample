@@ -105,7 +105,8 @@ test_video.mp4
 # production
 /build
 /lib
-/dist
+/dist/*
+!/dist/package.json
 
 # misc
 .env.local
