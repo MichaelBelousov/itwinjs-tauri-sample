@@ -47,6 +47,7 @@ fn main() {
         while let Some(event) = rx.recv().await {
           match event {
             CommandEvent::Stdout(line) => {
+              println!("stdout! '{}'", line);
               window
                 .emit("message", Some(format!("'{}'", line)))
                 .expect("failed to emit event");
@@ -57,11 +58,19 @@ fn main() {
               }
             }
             CommandEvent::Stderr(line) => {
+              println!("stderr! '{}'", line);
               window
                 .emit("message", Some(format!("ERROR: '{}'", line)))
                 .expect("failed to emit event");
             }
+            CommandEvent::Terminated(payload) => {
+              println!("terminated! '{:?}'", payload);
+              window
+                .emit("message", Some("sidecar terminated!"))
+                .expect("failed to emit event");
+            }
             _ => {
+              println!("unknown!");
               window
                 .emit("message", Some("unknown event"))
                 .expect("failed to emit event");
