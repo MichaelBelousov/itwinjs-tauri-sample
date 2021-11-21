@@ -92,7 +92,8 @@
     "electron": "electron lib/backend/main.js",
     "electron:debug": "cross-env NODE_ENV=development electron lib/backend/main.js",
     "start:frontend": "react-scripts start",
-    "pseudolocalize": "betools pseudolocalize --englishDir ./public/locales/en --out ./public/locales/en-PSEUDO"
+    "pseudolocalize": "betools pseudolocalize --englishDir ./public/locales/en --out ./public/locales/en-PSEUDO",
+    "clean": "rm itwin-sidecar_*.log"
   },
   "eslintConfig": {
     "extends": "react-app"
