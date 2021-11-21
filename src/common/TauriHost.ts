@@ -51,15 +51,13 @@ import { ElectronAuthorizationBackend } from "@bentley/electron-manager/lib/Elec
 import { PresentationRpcInterface } from "@bentley/presentation-common";
 import { EventEmitter } from "events";
 import type { IpcRendererEvent as ElectronIpcRendererEvent } from "electron";
-// TODO: split into frontend-only import
-import * as TauriApi from "@tauri-apps/api";
-import {
-  emit as tauriEmit,
-  listen as tauriListen,
-  once as tauriOnce,
-  EventCallback,
-  UnlistenFn,
-} from "@tauri-apps/api/event";
+import type { EventCallback, UnlistenFn } from "@tauri-apps/api/event";
+
+// frontend-only import
+let TauriApi!: typeof import("@tauri-apps/api");
+if (typeof window !== "undefined") {
+  TauriApi = require("@tauri-apps/api");
+}
 
 namespace Tauri {
   export interface BrowserWindow
@@ -868,15 +866,14 @@ Object.defineProperty(ProcessDetector, "isTauriAppBackend", {
   get() {
     return (
       // right now it's tauri because I say so
-      true
-      //typeof process === "object" && process.versions.hasOwnProperty("electron")
+      typeof process === "object"
     );
   },
 });
 
 Object.defineProperty(ProcessDetector, "isTauriAppFrontend", {
   get() {
-    return "__TAURI__" in window;
+    return typeof window !== "undefined" && "__TAURI__" in window;
   },
 });
 

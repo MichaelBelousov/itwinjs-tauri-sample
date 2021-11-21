@@ -9,6 +9,7 @@ import { Presentation } from "@bentley/presentation-backend";
 import { Menu } from "electron";
 import { MenuItemConstructorOptions } from "electron/main";
 import * as path from "path";
+import * as fs from "fs";
 
 import { AppLoggerCategory } from "../common/LoggerCategory";
 import { channelName, viewerRpcs } from "../common/ViewerConfig";
@@ -24,7 +25,44 @@ require("dotenv-flow").config(); // eslint-disable-line @typescript-eslint/no-va
  */
 const viewerMain = async () => {
   // Setup logging immediately to pick up any logging during IModelHost.startup()
-  Logger.initializeToConsole();
+  const latestLogFileNum =
+    (await fs.promises.readdir(process.cwd()))
+      .map((fileName) => /itwin-sidecar_(?<num>\d+)\.log/.exec(fileName))
+      .filter((match): match is RegExpExecArray => match !== null)
+      .map((match) => parseInt(match.groups.num))
+      // get the last number
+      .sort((a, b) => b - a)[0] ?? 0;
+  const logFile = await fs.promises.open(
+    `itwin-sidecar_${latestLogFileNum + 1}.log`,
+    "r+"
+  );
+  Logger.initialize(
+    (category, message, getMetaData) =>
+      logFile.write(
+        `Error   |${category}| ${message}${(Logger as any).formatMetaData(
+          getMetaData
+        )}`
+      ),
+    (category, message, getMetaData) =>
+      logFile.write(
+        `Warning |${category}| ${message}${(Logger as any).formatMetaData(
+          getMetaData
+        )}`
+      ),
+    (category, message, getMetaData) =>
+      logFile.write(
+        `Info    |${category}| ${message}${(Logger as any).formatMetaData(
+          getMetaData
+        )}`
+      ),
+    (category, message, getMetaData) =>
+      logFile.write(
+        `Trace   |${category}| ${message}${(Logger as any).formatMetaData(
+          getMetaData
+        )}`
+      )
+  );
+  process.on("exit", () => logFile.close());
   Logger.setLevelDefault(LogLevel.Warning);
   Logger.setLevel(AppLoggerCategory.Backend, LogLevel.Info);
 
