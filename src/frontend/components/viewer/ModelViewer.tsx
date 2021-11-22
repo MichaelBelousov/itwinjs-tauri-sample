@@ -9,7 +9,7 @@ import {
   ScreenViewport,
   StandardViewId,
 } from "@bentley/imodeljs-frontend";
-import { Viewer } from "@itwin/desktop-viewer-react";
+import { Viewer } from "../../tauri-desktop-viewer";
 import React, { useCallback, useMemo } from "react";
 
 interface ModelViewerParams {
