@@ -19,6 +19,11 @@ fn main() {
   tauri::Builder::default()
     .setup(|app| {
       let window = app.get_window("main").unwrap();
+
+      let global_listener_id = app.listen_global("event-name", |event| {
+        println!("got event-name: {:?}", event.payload());
+      });
+
       tauri::async_runtime::spawn(async move {
         let (mut rx, mut child) = Command::new_sidecar("node")
           // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source

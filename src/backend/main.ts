@@ -14,7 +14,7 @@ import * as fs from "fs";
 import { AppLoggerCategory } from "../common/LoggerCategory";
 import { channelName, viewerRpcs } from "../common/ViewerConfig";
 import { appInfo, getAppEnvVar } from "./AppInfo";
-import { TauriHost, TauriHostOptions } from "../common/TauriHost";
+import { TauriHost, TauriHostOptions } from "./TauriHost";
 import ViewerHandler from "./ViewerHandler";
 
 require("dotenv-flow").config(); // eslint-disable-line @typescript-eslint/no-var-requires

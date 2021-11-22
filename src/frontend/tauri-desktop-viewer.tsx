@@ -9,7 +9,7 @@ import {
 } from "@itwin/viewer-react";
 import { DesktopViewerProps } from "@itwin/desktop-viewer-react";
 import React, { useEffect, useMemo, useState } from "react";
-import { TauriApp, TauriAppOpts } from "src/common/TauriHost";
+import { TauriApp, TauriAppOpts } from "src/frontend/TauriHost";
 import { IModelApp } from "@bentley/imodeljs-frontend";
 
 export class TauriDesktopInitializer {
