@@ -1472,6 +1472,11 @@
   resolved "https://pkgs.dev.azure.com/bentleycs/_packaging/Packages/npm/registry/@bentley/imodeljs-native/-/imodeljs-native-2.19.24.tgz#4fa8a29c51c6f6b8b12b815887253c12a4b464f6"
   integrity sha1-T6iinFHG9rixK4FYhyU8EqS0ZPY=
 
+"@bentley/imodeljs-native@^3.0.18":
+  version "3.0.18"
+  resolved "https://pkgs.dev.azure.com/bentleycs/_packaging/Packages/npm/registry/@bentley/imodeljs-native/-/imodeljs-native-3.0.18.tgz#051be274e9504bcb185c8a6b493961f605ad285c"
+  integrity sha1-BRvidOlQS8sYXIprSTlh9gWtKFw=
+
 "@bentley/imodeljs-quantity@^2.14.0":
   version "2.19.22"
   resolved "https://pkgs.dev.azure.com/bentleycs/_packaging/Packages/npm/registry/@bentley/imodeljs-quantity/-/imodeljs-quantity-2.19.22.tgz#e53eb4ed80ab27d902ebab6731c597c793b57a98"

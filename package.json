@@ -19,6 +19,7 @@
     "@bentley/imodeljs-frontend": "^2.14.0",
     "@bentley/imodeljs-i18n": "^2.14.0",
     "@bentley/imodeljs-markup": "^2.14.0",
+    "@bentley/imodeljs-native": "^3.0.18",
     "@bentley/imodeljs-quantity": "^2.14.0",
     "@bentley/itwin-client": "^2.14.0",
     "@bentley/orbitgt-core": "^2.14.0",

@@ -48,6 +48,7 @@ function getBackendWebpackConfig() {
         },
       ],
     },
+    target: "node",
   };
 }
 
