@@ -38,8 +38,8 @@ function getBackendWebpackConfig() {
               },
             },
           ],
-          // tauri-apps
-          //exclude: /node_modules(?!=\/@tauri-apps\/api)/,
+          // not ideal, but I'm too lazy to figure out how to properly webpack@4 it
+          // or switch to webpack@5 for just the backend to see if that works
           include: [
             path.resolve(__dirname, "./src"),
             path.resolve(__dirname, "node_modules/@tauri-apps/api"),

@@ -5,11 +5,9 @@
 
 const execa = require("execa");
 const fse = require("fs-extra");
+const path = require("path");
 
-let extension = "";
-if (process.platform === "win32") {
-  extension = ".exe";
-}
+const extension = process.platform === "win32" ? ".exe" : "";
 
 async function main() {
   const rustInfo = (await execa("rustc", ["-vV"])).stdout;
@@ -17,15 +15,16 @@ async function main() {
   if (!targetTriple) {
     console.error("Failed to determine platform target triple");
   }
-  await fse.rename(
-    `src-tauri/binaries/app${extension}`,
-    `src-tauri/binaries/app-${targetTriple}${extension}`
+  await fse.copy(
+    process.execPath,
+    path.resolve(`src-tauri/binaries/node-${targetTriple}${extension}`),
+    {
+      errorOnExist: false,
+      overwrite: false,
+    }
   );
   // TODO: should probably be copy...
-  await fse.copy(`dist/assets`, `src-tauri/binaries/assets`, {
-    overwrite: true,
-  });
-  await fse.copy(`dist/node_modules`, `src-tauri/binaries/node_modules`, {
+  await fse.copy(`dist`, `src-tauri/binaries/dist`, {
     overwrite: true,
   });
 }

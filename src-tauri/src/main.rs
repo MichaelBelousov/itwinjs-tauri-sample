@@ -20,8 +20,10 @@ fn main() {
     .setup(|app| {
       let window = app.get_window("main").unwrap();
       tauri::async_runtime::spawn(async move {
-        let (mut rx, mut child) = Command::new_sidecar("app")
-          .expect("failed to setup `app` sidecar")
+        let (mut rx, mut child) = Command::new_sidecar("node")
+          // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
+          .expect("failed to setup `node` sidecar")
+          .args(&["binaries/dist/main.js"])
           /*
           .stdin(Stdio::piped())
           .expect("failed to pipe stdin")
