@@ -136,7 +136,7 @@ export class TauriApp {
    */
   public static async startup(opts?: TauriAppOpts) {
     if (!ProcessDetector.isTauriAppFrontend)
-      throw new Error("Not running under Electron");
+      throw new Error("Not running under Tauri");
     if (!this.isValid) {
       this._ipc = new TauriIpcFrontend();
       TauriRpcManager.initializeFrontend(

@@ -41,10 +41,10 @@ export class TauriDesktopInitializer {
       this._initializing = true;
 
       const cancellable = makeCancellable(function* () {
-        const electronViewerOpts: TauriAppOpts = {
+        const tauriViewerOpts: TauriAppOpts = {
           iModelApp: getIModelAppOptions(options),
         };
-        yield TauriApp.startup(electronViewerOpts);
+        yield TauriApp.startup(tauriViewerOpts);
 
         console.log("desktop viewer started");
       });

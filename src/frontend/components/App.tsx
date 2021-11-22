@@ -3,7 +3,7 @@
  * See LICENSE.md in the project root for license terms and full copyright notice.
  *--------------------------------------------------------------------------------------------*/
 
-import { useDesktopViewerInitializer } from "@itwin/desktop-viewer-react";
+import { useTauriDesktopViewerInitializer } from "../tauri-desktop-viewer";
 import { Router } from "@reach/router";
 import React, { useCallback, useEffect, useState } from "react";
 
@@ -23,7 +23,7 @@ import {
 } from "./routes";
 
 const App = () => {
-  const initialized = useDesktopViewerInitializer();
+  const initialized = useTauriDesktopViewerInitializer();
   const [settings, setSettings] = useState<ViewerSettings>();
 
   useEffect(() => {

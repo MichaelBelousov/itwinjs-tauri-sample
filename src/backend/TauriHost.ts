@@ -1,5 +1,9 @@
 // part of the TauriHost that is in the backend runtime
 
+// NOTE: dying on TileAdmin.ts:165 (p)
+// const rpcConcurrency = IpcApp.isValid ? (await IpcApp.callIpcHost("queryConcurrency", "cpu")) : undefined;
+// which calls _ipc.invoke which is clearly not reacting correctly
+
 import {
   BeDuration,
   IModelStatus,
