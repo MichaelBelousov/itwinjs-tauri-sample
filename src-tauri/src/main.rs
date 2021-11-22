@@ -24,27 +24,10 @@ fn main() {
           // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
           .expect("failed to setup `node` sidecar")
           .args(&["binaries/dist/main.js"])
-          /*
-          .stdin(Stdio::piped())
-          .expect("failed to pipe stdin")
-          .stdout(Stdio::piped())
-          .expect("failed to pipe stdout")
-          */
           .spawn()
           .expect("Failed to spawn packaged node");
 
         let mut i = 0;
-
-        /*
-        let stdout = child.inner.take_stdout().expect("piped stderr should never fail");
-        let stdin = child.inner.take_stdin().expect("piped stdin should never fail");
-
-        thread::spawn(move || {
-          for line in BufReader::new(stdout).lines() {
-
-          }
-        })
-        */
 
         while let Some(event) = rx.recv().await {
           match event {
