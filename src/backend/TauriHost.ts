@@ -148,30 +148,6 @@ export interface TauriHostOpts extends NativeHostOpts {
   tauriHost?: TauriHostOptions;
 }
 
-declare module "@bentley/bentleyjs-core" {
-  namespace ProcessDetector {
-    /** Is this process the backend of a Tauri app? */
-    const isTauriAppBackend: boolean;
-    /** Is this process the frontend of a Tauri app? */
-    const isTauriAppFrontend: boolean;
-  }
-}
-
-Object.defineProperty(ProcessDetector, "isTauriAppBackend", {
-  get() {
-    return (
-      // right now it's tauri because I say so
-      typeof process === "object"
-    );
-  },
-});
-
-Object.defineProperty(ProcessDetector, "isTauriAppFrontend", {
-  get() {
-    return typeof window !== "undefined" && "__TAURI__" in window;
-  },
-});
-
 /**
  * The backend for Tauri-based desktop applications
  * @beta

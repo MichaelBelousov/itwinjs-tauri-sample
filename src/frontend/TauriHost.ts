@@ -73,18 +73,20 @@ class TauriIpcFrontend implements IpcSocketFrontend {
     }
     async invoke(channel: string, ...data: any[]): Promise<any> {
       TauriIpcFrontend.checkPrefix(channel);
-      return TauriApi.invoke("ipcRenderer.invoke", {
-        type: "ipcRenderer.invoke",
+      return TauriApi.invoke("ipcRenderer_invoke", {
+        type: "ipcRenderer_invoke",
         channel,
         args: data,
+        json: JSON.stringify(data),
       });
     }
     send(channel: string, ...data: any[]) {
       TauriIpcFrontend.checkPrefix(channel);
-      TauriApi.invoke("ipcRenderer.send", {
-        type: "ipcRenderer.send",
+      TauriApi.invoke("ipcRenderer_send", {
+        type: "ipcRenderer_send",
         channel,
         args: data,
+        json: JSON.stringify(data),
       });
     }
   })();
