@@ -22,33 +22,26 @@ struct Message {
 
 //#[derive(Default)]
 struct SideCar {
-  // TODO: remove Arc?
+  // https://tokio.rs/tokio/tutorial/shared-state#holding-a-mutexguard-across-an-await
   recv: Arc<Mutex<Option<Receiver<CommandEvent>>>>,
   child: Arc<Mutex<Option<CommandChild>>>,
 }
 
+// FIXME: make non-blocking async
 // returns a json string for simplicity
 #[tauri::command]
-async fn ipcRenderer_invoke(json: String, sidecar: tauri::State<'_, SideCar>) -> Result<String, String> {
+fn ipcRenderer_invoke(json: String, sidecar: tauri::State<'_, SideCar>) -> Result<String, String> {
 
-  {
-    let child_opt: &mut Option<CommandChild> = &mut *sidecar.child.lock().unwrap();
-    let child: &mut CommandChild = child_opt.as_mut().ok_or(String::from("no sidecar process yet"))?;
-    child.write(json.as_bytes()).unwrap();
-    child.write("\n".as_bytes()).unwrap();
-  }
+  let child_opt: &mut Option<CommandChild> = &mut *sidecar.child.lock().unwrap();
+  let child: &mut CommandChild = child_opt.as_mut().ok_or(String::from("no sidecar process yet"))?;
+  child.write(json.as_bytes()).unwrap();
+  child.write("\n".as_bytes()).unwrap();
 
-  //let mut rx =
-  let rx = {
-    let rx: Arc<Mutex<Option<Receiver<CommandEvent>>>> = sidecar.recv.clone();
-    let mut rx : std::sync::MutexGuard<'_, Option<Receiver<CommandEvent>>> = rx.lock().unwrap();
-    let rx: &mut Receiver<CommandEvent> = rx.as_mut().ok_or(String::from("no sidecar process yet"))?;
-    let rx = rx.recv();
-    let maybe_event = rx.await;
-  };
+  let rx: Arc<Mutex<Option<Receiver<CommandEvent>>>> = sidecar.recv.clone();
+  let mut rx : std::sync::MutexGuard<'_, Option<Receiver<CommandEvent>>> = rx.lock().unwrap();
+  let rx: &mut Receiver<CommandEvent> = rx.as_mut().ok_or(String::from("no sidecar process yet"))?;
+  let maybe_event = rx.blocking_recv();
 
-  //let maybe_event = rx.await;
-  /*
   if let Some(event) = maybe_event {
     match event {
       CommandEvent::Stdout(line) => {
@@ -63,12 +56,14 @@ async fn ipcRenderer_invoke(json: String, sidecar: tauri::State<'_, SideCar>) ->
         println!("terminated! '{:?}'", payload);
         Err("sidecar terminated".into())
       }
+      _ => {
+        println!("unknown!");
+        Err("unknown command event".into())
+      }
     }
   } else {
     Err("event was none!".into())
   }
-  */
-  Err("event was none!".into())
 }
 
 #[tauri::command]
