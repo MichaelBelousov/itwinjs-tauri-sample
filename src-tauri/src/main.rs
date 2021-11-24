@@ -8,10 +8,11 @@ use tauri::{
   Manager,
 };
 
-use tokio::sync::{oneshot, mpsc};
+use tokio::sync::{oneshot, mpsc::{self, Receiver, Sender}};
 
 use std::{
   sync::{Arc, Mutex},
+  cell::RefCell,
 };
 
 #[derive(serde::Serialize)]
@@ -20,11 +21,9 @@ struct Message {
   json: String,
 }
 
-enum IpcCommand {
-  Invoke {
-    //req: String,
-    resp: oneshot::Sender<Result<String, String>>
-  }
+struct IpcCommand {
+  //req: String,
+  resp: oneshot::Sender<Result<String, String>>
 }
 
 //#[derive(Default)]
@@ -39,15 +38,17 @@ struct SideCar {
 // returns a json string for simplicity
 #[tauri::command]
 async fn ipcRenderer_invoke(channel: String, json: String, sidecar: tauri::State<'_, SideCar>) -> Result<String, String> {
-  let child_opt: &mut Option<CommandChild> = &mut *sidecar.child.lock().unwrap();
-  let child: &mut CommandChild = child_opt.as_mut().ok_or(String::from("no sidecar process yet"))?;
-  child.write(json.as_bytes()).unwrap();
-  child.write("\n".as_bytes()).unwrap();
+  {
+    let child_opt: &mut Option<CommandChild> = &mut *sidecar.child.lock().unwrap();
+    let child: &mut CommandChild = child_opt.as_mut().ok_or(String::from("no sidecar process yet"))?;
+    child.write(json.as_bytes()).unwrap();
+    child.write("\n".as_bytes()).unwrap();
+  }
 
   let (sender, receiver) = oneshot::channel();
-  sidecar.ipc.clone().send(IpcCommand::Invoke{resp: sender}).await;
+  sidecar.ipc.clone().send(IpcCommand{resp: sender}).await;
   let result = receiver.await;
-  result?
+  return result.unwrap();
 }
 
 #[tauri::command]
@@ -57,7 +58,8 @@ async fn ipcRenderer_send(state: tauri::State<'_, SideCar>) -> Result<String, St
 
 fn main() {
   let (event_wrap_sender, mut event_wrap_recv) = mpsc::channel(1);
-  //let tx1 = event_wrap_sender.clone();
+  let event_wrap_sender_2 = event_wrap_sender.clone();
+
   tauri::Builder::default()
     .manage(SideCar{
       ipc: event_wrap_sender,
@@ -70,7 +72,6 @@ fn main() {
       let global_listener_id = app.listen_global("event-name", |event| {
         println!("got event-name: {:?}", event.payload());
       });
-
       let state_child = app.state::<SideCar>().child.clone();
 
       tauri::async_runtime::spawn(async move {
@@ -107,6 +108,14 @@ fn main() {
               }
             );
           }
+        }
+      });
+
+      let event_wrap_sender = event_wrap_sender_2.clone();
+
+      tauri::async_runtime::spawn(async move {
+        while let Some(evt) = event_wrap_recv.recv().await {
+          event_wrap_sender.send(evt).await;
         }
       });
 
