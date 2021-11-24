@@ -58,7 +58,6 @@ async fn ipcRenderer_send(state: tauri::State<'_, SideCar>) -> Result<String, St
 
 fn main() {
   let (event_wrap_sender, mut event_wrap_recv) = mpsc::channel(1);
-  let event_wrap_sender_2 = event_wrap_sender.clone();
 
   tauri::Builder::default()
     .manage(SideCar{
@@ -108,14 +107,6 @@ fn main() {
               }
             );
           }
-        }
-      });
-
-      let event_wrap_sender = event_wrap_sender_2.clone();
-
-      tauri::async_runtime::spawn(async move {
-        while let Some(evt) = event_wrap_recv.recv().await {
-          event_wrap_sender.send(evt).await;
         }
       });
 
