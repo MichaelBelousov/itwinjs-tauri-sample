@@ -30,7 +30,7 @@ struct IpcCommand {
 struct SideCar {
   // https://tokio.rs/tokio/tutorial/channels
   child: Arc<Mutex<Option<CommandChild>>>,
-  ipc: mpsc::Sender<IpcCommand>
+  ipc: Arc<tokio::sync::Mutex<Option<mpsc::Sender<IpcCommand>>>>
   // either have a one shot in every command or put a channel in here for commands to talk back with
 }
 
@@ -46,7 +46,8 @@ async fn ipcRenderer_invoke(channel: String, json: String, sidecar: tauri::State
   }
 
   let (sender, receiver) = oneshot::channel();
-  sidecar.ipc.clone().send(IpcCommand{resp: sender}).await;
+  let mut ipc = sidecar.ipc.lock().await;
+  ipc.as_mut().ok_or("sidecar ipc uninited")?.send(IpcCommand{resp: sender}).await;
   let result = receiver.await;
   return result.unwrap();
 }
@@ -57,21 +58,22 @@ async fn ipcRenderer_send(state: tauri::State<'_, SideCar>) -> Result<String, St
 }
 
 fn main() {
-  let (event_wrap_sender, mut event_wrap_recv) = mpsc::channel(1);
-
   tauri::Builder::default()
     .manage(SideCar{
-      ipc: event_wrap_sender,
+      ipc: Arc::new(tokio::sync::Mutex::new(None)),
       child: Arc::new(Mutex::new(None)),
     })
     .invoke_handler(tauri::generate_handler![ipcRenderer_invoke, ipcRenderer_send])
     .setup(move |app| {
       let window = app.get_window("main").unwrap();
 
+
       let global_listener_id = app.listen_global("event-name", |event| {
         println!("got event-name: {:?}", event.payload());
       });
+
       let state_child = app.state::<SideCar>().child.clone();
+      let state_event_wrap = app.state::<SideCar>().ipc.clone();
 
       tauri::async_runtime::spawn(async move {
         let (mut rx, mut child) = Command::new_sidecar("node")
@@ -82,7 +84,9 @@ fn main() {
           .expect("Failed to spawn packaged node");
 
 
+        let (event_wrap_sender, mut event_wrap_recv) = mpsc::channel(1);
         *state_child.lock().unwrap() = Some(child);
+        *state_event_wrap.lock().await = Some(event_wrap_sender);
 
         while let Some(event) = rx.recv().await {
           if let Some(cmd) = event_wrap_recv.recv().await {
