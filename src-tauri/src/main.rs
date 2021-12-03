@@ -34,29 +34,6 @@ struct SideCar {
   // either have a one shot in every command or put a channel in here for commands to talk back with
 }
 
-// FIXME: make non-blocking async
-// returns a json string for simplicity
-#[tauri::command]
-async fn ipcRenderer_invoke(channel: String, json: String, sidecar: tauri::State<'_, SideCar>) -> Result<String, String> {
-  {
-    let child_opt: &mut Option<CommandChild> = &mut *sidecar.child.lock().unwrap();
-    let child: &mut CommandChild = child_opt.as_mut().ok_or(String::from("no sidecar process yet"))?;
-    child.write(json.as_bytes()).unwrap();
-    child.write("\n".as_bytes()).unwrap();
-  }
-
-  let (sender, receiver) = oneshot::channel();
-  let mut ipc = sidecar.ipc.lock().await;
-  ipc.as_mut().ok_or("sidecar ipc uninited")?.send(IpcCommand{resp: sender}).await;
-  let result = receiver.await;
-  return result.unwrap();
-}
-
-#[tauri::command]
-async fn ipcRenderer_send(state: tauri::State<'_, SideCar>) -> Result<String, String> {
-  Ok(String::from("unimplemented"))
-}
-
 fn main() {
   tauri::Builder::default()
     .manage(SideCar{
@@ -67,14 +44,6 @@ fn main() {
     .setup(move |app| {
       let window = app.get_window("main").unwrap();
 
-
-      let global_listener_id = app.listen_global("event-name", |event| {
-        println!("got event-name: {:?}", event.payload());
-      });
-
-      let state_child = app.state::<SideCar>().child.clone();
-      let state_event_wrap = app.state::<SideCar>().ipc.clone();
-
       tauri::async_runtime::spawn(async move {
         let (mut rx, mut child) = Command::new_sidecar("node")
           // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
@@ -83,35 +52,36 @@ fn main() {
           .spawn()
           .expect("Failed to spawn packaged node");
 
-
-        let (event_wrap_sender, mut event_wrap_recv) = mpsc::channel(1);
-        *state_child.lock().unwrap() = Some(child);
-        *state_event_wrap.lock().await = Some(event_wrap_sender);
-
-        while let Some(event) = rx.recv().await {
-          if let Some(cmd) = event_wrap_recv.recv().await {
-            cmd.resp.send(
-              match event {
-                CommandEvent::Stdout(line) => {
-                  println!("stdout! '{}'", line);
-                  Ok(line)
+        app.listen_global("ipcRenderer_invoke", |event| {
+          tauri::async_runtime::spawn(async move {
+            child.write(event.payload().as_bytes()).unwrap();
+            child.write("\n".as_bytes()).unwrap();
+            if let Some(cmd) = rx.recv().await {
+              app.emit_all("ipcRenderer_invoke",
+                match event {
+                  CommandEvent::Stdout(json) => {
+                    println!("stdout! '{}'", line);
+                    Message { json, channel: "ipcRenderer_invoke" }
+                  }
+                  CommandEvent::Stderr(json) => {
+                    println!("stderr! '{}'", line);
+                    Message { json, channel: "ipcRenderer_invoke_err" }
+                  }
+                  CommandEvent::Terminated(payload) => {
+                    println!("terminated! '{:?}'", payload);
+                    Err("sidecar terminated".into())
+                  }
+                  _ => {
+                    println!("unknown!");
+                    Err("unknown command event".into())
+                  }
                 }
-                CommandEvent::Stderr(line) => {
-                  println!("stderr! '{}'", line);
-                  Err("stderr received".into())
-                }
-                CommandEvent::Terminated(payload) => {
-                  println!("terminated! '{:?}'", payload);
-                  Err("sidecar terminated".into())
-                }
-                _ => {
-                  println!("unknown!");
-                  Err("unknown command event".into())
-                }
-              }
-            );
-          }
-        }
+              );
+            } else {
+              println!("error child had None response")
+            }
+          });
+        });
       });
 
       Ok(())

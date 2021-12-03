@@ -62,7 +62,7 @@ const viewerMain = async () => {
         )}`
       )
   );
-  process.on("exit", () => logFile.close());
+  process.on("beforeExit", () => logFile.close());
   Logger.setLevelDefault(LogLevel.Warning);
   Logger.setLevel(AppLoggerCategory.Backend, LogLevel.Info);
 
