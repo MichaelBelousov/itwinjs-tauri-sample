@@ -25,8 +25,8 @@ fn main() {
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
         .args(&[
-          //"--inspect",
-          "--inspect-brk",
+          "--inspect",
+          //"--inspect-brk",
           "binaries/dist/main.js"
         ])
         .spawn()
@@ -39,7 +39,7 @@ fn main() {
       window.listen("ipcRenderer_event", move |event| {
         println!("got ipcRenderer_event! {:?}", event);
         let mut child = child_cell.borrow_mut();
-        child.write(event.payload().unwrap_or("<none>").as_bytes()).unwrap();
+        child.write(event.payload().unwrap().as_bytes()).unwrap();
         child.write("\n".as_bytes()).unwrap();
       });
 
@@ -50,15 +50,12 @@ fn main() {
           window.emit("ipcRenderer_event_respond",
             match cmd {
               CommandEvent::Stdout(json) => {
-                println!("stdout! '{}'", json);
                 Message { json, channel: "ipcRenderer_invoke".into() }
               }
               CommandEvent::Stderr(json) => {
-                println!("stderr! '{}'", json);
                 Message { json, channel: "ipcRenderer_invoke_err".into() }
               }
               CommandEvent::Terminated(payload) => {
-                println!("terminated! '{:?}'", payload);
                 //Err("sidecar terminated".into())
                 Message { json: "terminated!".into(), channel: "ipcRenderer_invoke_term".into() }
               }

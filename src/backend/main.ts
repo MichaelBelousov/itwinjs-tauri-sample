@@ -10,13 +10,15 @@ import { Menu } from "electron";
 import { MenuItemConstructorOptions } from "electron/main";
 import * as path from "path";
 import * as fs from "fs";
-import * as readline from "readline";
+import split from "split";
 
 import { AppLoggerCategory } from "../common/LoggerCategory";
 import { channelName, viewerRpcs } from "../common/ViewerConfig";
 import { appInfo, getAppEnvVar } from "./AppInfo";
 import { TauriHost, TauriHostOptions } from "./TauriHost";
 import ViewerHandler from "./ViewerHandler";
+
+const loggerCategory = "tauri-main";
 
 require("dotenv-flow").config(); // eslint-disable-line @typescript-eslint/no-var-requires
 
@@ -33,15 +35,15 @@ const viewerMain = async () => {
       .map((match) => parseInt(match.groups!.num))
       // get the last number
       .sort((a, b) => b - a)[0] ?? 0;
-  const logFile = await fs.promises.open(
+  const logFile = fs.createWriteStream(
     `itwin-sidecar_${latestLogFileNum + 1}.log`,
-    "wx"
+    { flags: "wx" }
   );
   const makeLogImpl =
     (name: string): Parameters<typeof Logger["initialize"]>[0] =>
     (category, message, getMetaData) =>
-      //logFile.write(
-      process.stderr.write(
+      //process.stderr.write(
+      logFile.write(
         `${name}   |${category}| ${message}${(Logger as any).formatMetaData(
           getMetaData
         )}`
@@ -175,31 +177,28 @@ const createMenu = () => {
   try {
     await viewerMain();
   } catch (error) {
-    Logger.logError(AppLoggerCategory.Backend, error);
+    Logger.logError(loggerCategory, error);
     process.exitCode = 1;
   }
-  // TODO: move to tauri startup...
-  // FIXME: readline is overkill for this lowlevel ipc I need... better off manually parsing chunks
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-    //terminal: false
-  });
-  // eww?
-  let prevPromise = Promise.resolve();
-  rl.on("line", async (line) => {
-    await prevPromise; // keep order in spite of async waiting
-    Logger.logInfo("ipc-test", `received line: '${line}'`);
-    const json = JSON.parse(line);
-    const event = typeof Event !== "undefined" ? new Event(json.args[0]) : {};
-    const currInvocation = TauriHost.ipcMain.invoke(
-      json.channel,
-      event as Event,
-      ...json.args
-    );
-    prevPromise = currInvocation;
-    const result = await currInvocation;
-    // TODO: why isn't Ipc send used here?
-    process.stdout.write(JSON.stringify(result)+'\n');
-  });
+  // TODO: move to tauri ipc startup...
+  process.stdin
+    .pipe(split(JSON.parse))
+    .on("data", async (json) => {
+      const event = typeof Event !== "undefined" ? new Event(json.args[0]) : {};
+      const result = await TauriHost.ipcMain.invoke(
+        json.channel,
+        event as Event,
+        ...json.args
+      );
+      process.stdout.write(
+        JSON.stringify({
+          /** I need some kind of primitive sequence tag to allow out-of-order responses */
+          tag: json.tag ?? 0,
+          result,
+        }) + "\n"
+      );
+    })
+    .on("error", (err) => {
+      Logger.logError(loggerCategory, err?.message, () => err);
+    });
 })();

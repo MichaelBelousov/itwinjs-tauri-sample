@@ -73,7 +73,7 @@ class TauriIpcFrontend implements IpcSocketFrontend {
     }
     async invoke(channel: string, ...data: any[]): Promise<any> {
       TauriIpcFrontend.checkPrefix(channel);
-      return TauriApi.event.emit(
+      const emitted = await TauriApi.event.emit(
         "ipcRenderer_event",
         JSON.stringify({
           type: "ipcRenderer_event",
@@ -82,10 +82,11 @@ class TauriIpcFrontend implements IpcSocketFrontend {
           json: JSON.stringify(data),
         })
       );
+      return emitted;
     }
     send(channel: string, ...data: any[]) {
       TauriIpcFrontend.checkPrefix(channel);
-      return TauriApi.event.emit(
+      TauriApi.event.emit(
         "ipcRenderer_event",
         JSON.stringify({
           type: "ipcRenderer_invoke",
