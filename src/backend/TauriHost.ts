@@ -174,12 +174,21 @@ export class TauriHost {
   public static rpcConfig: RpcConfiguration;
 
   public static ipcMain = (() => {
+    // TODO: should this even extend EventEmitter?
     return new (class extends EventEmitter {
+      //////////////////////////////////////////////
+      private handlers = new Map<string, (...args: any[]) => any>();
+      public invoke(channel: string, _evt?: Event, ...args: any[]): any {
+        if (!this.handlers.has(channel))
+          throw Error("tried to invoke on an unhandled channel");
+        return this.handlers.get(channel)!(_evt, ...args);
+      }
+      //////////////////////////////////////////////
       public handle(channel: string, listener: (...args: any[]) => any) {
-        this.addListener(channel, listener);
+        this.handlers.set(channel, listener);
       }
       public removeHandler(channel: string) {
-        this.removeAllListeners(channel);
+        this.handlers.delete(channel);
       }
     })();
   })();

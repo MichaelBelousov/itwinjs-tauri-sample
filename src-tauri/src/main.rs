@@ -8,10 +8,7 @@ use tauri::{
   Manager,
 };
 
-use tokio::sync::{oneshot, mpsc::{self, Receiver, Sender}};
-
 use std::{
-  sync::{Arc, Mutex},
   cell::RefCell,
 };
 
@@ -21,32 +18,17 @@ struct Message {
   json: String,
 }
 
-struct IpcCommand {
-  //req: String,
-  resp: oneshot::Sender<Result<String, String>>
-}
-
-//#[derive(Default)]
-struct SideCar {
-  // https://tokio.rs/tokio/tutorial/channels
-  child: Arc<Mutex<Option<CommandChild>>>,
-  ipc: Arc<tokio::sync::Mutex<Option<mpsc::Sender<IpcCommand>>>>
-  // either have a one shot in every command or put a channel in here for commands to talk back with
-}
-
 fn main() {
   tauri::Builder::default()
-    .manage(SideCar{
-      ipc: Arc::new(tokio::sync::Mutex::new(None)),
-      child: Arc::new(Mutex::new(None)),
-    })
-    //.invoke_handler(tauri::generate_handler![ipcRenderer_invoke, ipcRenderer_send])
     .setup(|app| {
-
       let (mut rx, mut child) = Command::new_sidecar("node")
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
-        .args(&["binaries/dist/main.js"])
+        .args(&[
+          //"--inspect",
+          "--inspect-brk",
+          "binaries/dist/main.js"
+        ])
         .spawn()
         .expect("Failed to spawn packaged node");
 
@@ -55,13 +37,17 @@ fn main() {
       let child_cell = RefCell::new(child);
 
       window.listen("ipcRenderer_event", move |event| {
-        child_cell.borrow_mut().write(event.payload().unwrap_or("<none>").as_bytes()).unwrap();
-        child_cell.borrow_mut().write("\n".as_bytes()).unwrap();
+        println!("got ipcRenderer_event! {:?}", event);
+        let mut child = child_cell.borrow_mut();
+        child.write(event.payload().unwrap_or("<none>").as_bytes()).unwrap();
+        child.write("\n".as_bytes()).unwrap();
       });
 
       tauri::async_runtime::spawn(async move {
+        println!("started ipcRenderer_responder");
         if let Some(cmd) = rx.recv().await {
-          window.emit("ipcRenderer_invoke",
+          println!("got cmd {:?}", cmd);
+          window.emit("ipcRenderer_event_respond",
             match cmd {
               CommandEvent::Stdout(json) => {
                 println!("stdout! '{}'", json);

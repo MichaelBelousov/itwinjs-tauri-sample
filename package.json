@@ -84,6 +84,7 @@
     "eject": "react-scripts eject",
     "build:backend": "yarn build:backend:webpack && node scripts/move-binary.js",
     "build:backend:webpack": "webpack --config backend.webpack.config.js",
+    "build:backend:watch": "webpack --config backend.webpack.config.js --watch",
     "build:frontend": "yarn pseudolocalize && react-scripts build",
     "//build:tauri": "pkg dist/package.json --output src-tauri/binaries/app && node scripts/move-binary.js",
     "start:frontend": "react-scripts start",
