@@ -33,7 +33,7 @@ fn main() {
       let child_cell = RefCell::new(child);
 
       window.listen("ipcRenderer_event", move |event| {
-        println!("got ipcRenderer_event! {:?}", event);
+        //println!("got ipcRenderer_event! {:?}", event);
         let mut child = child_cell.borrow_mut();
         child.write(event.payload().unwrap().as_bytes()).unwrap();
         child.write("\n".as_bytes()).unwrap();
@@ -41,7 +41,7 @@ fn main() {
 
       tauri::async_runtime::spawn(async move {
         while let Some(cmd) = rx.recv().await  {
-          println!("got cmd: {:?}", cmd);
+          //println!("got cmd: {:?}", cmd);
           match cmd {
             CommandEvent::Stdout(json) => {
               window.emit("ipcRenderer_event_respond", Message { json, channel: "ipcRenderer_invoke".into() });
