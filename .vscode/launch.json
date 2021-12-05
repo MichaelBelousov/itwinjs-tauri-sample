@@ -1,6 +1,17 @@
 {
   "version": "0.2.0",
   "configurations": [
+  {
+    //"address": "TCP/IP address of process to be debugged",
+    "localRoot": "${workspaceFolder}/src-tauri",
+    "name": "Attach to running tauri app",
+    "port": 9229,
+    "request": "attach",
+    "skipFiles": [
+      "<node_internals>/**"
+    ],
+    "type": "pwa-node"
+  },
     {
       "type": "pwa-node",
       "request": "launch",
