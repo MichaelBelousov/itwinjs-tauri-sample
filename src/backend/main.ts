@@ -45,7 +45,7 @@ const viewerMain = async () => {
       logFile.write(
         `${name}   |${category}| ${message}${(Logger as any).formatMetaData(
           getMetaData
-        )}`
+        )}\n`
       );
   Logger.initialize(
     makeLogImpl("Error"),

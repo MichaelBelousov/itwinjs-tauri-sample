@@ -1,6 +1,6 @@
 // part of the TauriHost that is in the frontend runtime
 
-import { Logger, ProcessDetector } from "@bentley/bentleyjs-core";
+import { ProcessDetector } from "@bentley/bentleyjs-core";
 import {
   AsyncMethodsOf,
   IpcApp,
@@ -13,6 +13,7 @@ import type { EventCallback, UnlistenFn } from "@tauri-apps/api/event";
 import type { IpcRendererEvent as ElectronIpcRendererEvent } from "electron";
 import * as TauriApi from "@tauri-apps/api";
 import { TauriRpcManager } from "src/common/TauriHost";
+import { EventEmitter } from "events";
 
 namespace Tauri {
   export interface BrowserWindow
@@ -46,12 +47,17 @@ class TauriIpcFrontend implements IpcSocketFrontend {
 
   // NOTE: this replaces the electron preload script
   private api = new (class implements ITwinTauriApi {
+    private taggedEvents = new EventEmitter();
     public constructor() {
-      console.log("initiating generic event response listener")
-      const _unlisten = TauriApi.event
-        .listen<any>("ipcRenderer_event_respond", (event) => {
-          console.log("generic event response ran", event)
-        });
+      TauriApi.event.listen<any>("ipcRenderer_event_respond", (event) => {
+        const p = event.payload;
+        try {
+          const json = JSON.parse(p.json);
+          this.taggedEvents.emit(json.tag, json.result, event);
+        } catch {
+          console.log("received event in unknown format", event);
+        }
+      });
     }
     private _unlisteners = new Map<
       string,
@@ -80,23 +86,10 @@ class TauriIpcFrontend implements IpcSocketFrontend {
     }
     async invoke(channel: string, ...data: any[]): Promise<any> {
       TauriIpcFrontend.checkPrefix(channel);
-      const tag = Math.random(); // temporary tag; ignoring mostly for now
-      const resultPromise = new Promise<void>((resolve) => {
-        console.log("initiating once event response listener")
-        const unlistenPromise = TauriApi.event
-          .once<any>("ipcRenderer_event_respond", (event) => {
-            console.log("once event response ran", event)
-            const p = event.payload;
-            try {
-              const json = JSON.parse(p.json);
-              if (json.tag === tag) {
-                unlistenPromise.then((unlisten) => unlisten());
-                resolve(json.result);
-              }
-            } catch {}
-          });
+      const tag = `${Math.random()}`; // temporary tag; ignoring mostly for now
+      const resultPromise = new Promise((resolve) => {
+        this.taggedEvents.once(tag, (result, _event) => resolve(result));
       });
-      console.log("emitting event:", data);
       await TauriApi.event.emit(
         "ipcRenderer_event",
         JSON.stringify({
@@ -109,17 +102,9 @@ class TauriIpcFrontend implements IpcSocketFrontend {
       );
       return await resultPromise;
     }
+    // rpc uses this
     send(channel: string, ...data: any[]) {
-      TauriIpcFrontend.checkPrefix(channel);
-      TauriApi.event.emit(
-        "ipcRenderer_event",
-        JSON.stringify({
-          type: "ipcRenderer_invoke",
-          channel,
-          args: data,
-          json: JSON.stringify(data),
-        })
-      );
+      void this.invoke(channel, ...data);
     }
   })();
 

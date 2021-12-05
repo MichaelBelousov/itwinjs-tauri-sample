@@ -283,8 +283,6 @@ export class TauriBackendIpcTransport extends TauriIpcTransport<
   SerializedRpcRequest,
   RpcRequestFulfillment
 > {
-  private _browserWindow: any;
-
   protected override setupPush() {
     RpcPushConnection.for = (channel, client) =>
       new TauriPushConnection(channel, client, this);
@@ -307,6 +305,7 @@ export class TauriBackendIpcTransport extends TauriIpcTransport<
     response.rawResult = raw;
   }
 
+  /*
   protected override performSend(channel: string, message: any, evt: any) {
     if (evt) {
       return super.performSend(channel, message, evt);
@@ -318,6 +317,7 @@ export class TauriBackendIpcTransport extends TauriIpcTransport<
       : this._browserWindow.getAllWindows();
     windows.forEach((window: any) => window.webContents.send(channel, message));
   }
+  */
 }
 
 let transport: TauriIpcTransport | undefined;
