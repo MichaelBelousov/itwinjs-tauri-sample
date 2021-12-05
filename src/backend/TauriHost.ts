@@ -7,6 +7,7 @@
 import {
   BeDuration,
   IModelStatus,
+  Logger,
   ProcessDetector,
 } from "@bentley/bentleyjs-core";
 import {
@@ -30,6 +31,9 @@ import { ElectronAuthorizationBackend } from "@bentley/electron-manager/lib/Elec
 import { EventEmitter } from "events";
 import type { IpcRendererEvent as ElectronIpcRendererEvent } from "electron";
 import { TauriRpcManager } from "../common/TauriHost";
+import split from "split";
+
+const loggerCategory = "taurihost-backend";
 
 namespace Tauri {
   export interface BrowserWindow
@@ -174,21 +178,65 @@ export class TauriHost {
   public static rpcConfig: RpcConfiguration;
 
   public static ipcMain = (() => {
-    // TODO: should this even extend EventEmitter?
     return new (class extends EventEmitter {
+      public constructor() {
+        super();
+        IModelHost.onAfterStartup.addOnce(() => {
+          process.stdin
+            .pipe(split(JSON.parse))
+            .on("data", async (json) => {
+              const event =
+                typeof Event !== "undefined"
+                  ? new Event(json.args[0])
+                  : ({} as Event);
+              const result = await TauriHost.ipcMain.invoke(
+                json.channel,
+                event,
+                ...json.args
+              );
+              process.stdout.write(
+                JSON.stringify({
+                  /** I need some kind of primitive sequence tag to allow out-of-order responses */
+                  tag: json.tag ?? 0,
+                  result,
+                }) + "\n"
+              );
+            })
+            .on("error", (err) => {
+              Logger.logError(loggerCategory, err?.message, () => err);
+            });
+        });
+      }
       //////////////////////////////////////////////
-      private handlers = new Map<string, (...args: any[]) => any>();
+      //private handlers = new Map<string, (...args: any[]) => any>();
       public invoke(channel: string, _evt?: Event, ...args: any[]): any {
+        //this.emit(channel, _evt, ...args);
+
+        // FIXME: use this.rawListeners
+        const channelListeners = this.listeners(channel);
+        if (channelListeners.length === 0)
+          throw Error("cannot invoke on unhandled channel");
+        if (channelListeners.length > 1)
+          // TODO: setMaxListeners()
+          throw Error(
+            "cannot assign multiple listeners to an invokable channel"
+          );
+        const [listener] = channelListeners;
+        return listener(_evt, ...args);
+        /*
         if (!this.handlers.has(channel))
           throw Error("tried to invoke on an unhandled channel");
         return this.handlers.get(channel)!(_evt, ...args);
+        */
       }
       //////////////////////////////////////////////
       public handle(channel: string, listener: (...args: any[]) => any) {
-        this.handlers.set(channel, listener);
+        this.addListener(channel, listener);
+        //this.handlers.set(channel, listener);
       }
       public removeHandler(channel: string) {
-        this.handlers.delete(channel);
+        this.removeAllListeners(channel);
+        //this.handlers.delete(channel);
       }
     })();
   })();

@@ -10,7 +10,6 @@ import { Menu } from "electron";
 import { MenuItemConstructorOptions } from "electron/main";
 import * as path from "path";
 import * as fs from "fs";
-import split from "split";
 
 import { AppLoggerCategory } from "../common/LoggerCategory";
 import { channelName, viewerRpcs } from "../common/ViewerConfig";
@@ -176,25 +175,4 @@ const createMenu = () => {
     Logger.logError(loggerCategory, error);
     process.exitCode = 1;
   }
-  // TODO: move to tauri ipcMain init
-  process.stdin
-    .pipe(split(JSON.parse))
-    .on("data", async (json) => {
-      const event = typeof Event !== "undefined" ? new Event(json.args[0]) : {} as Event;
-      const result = await TauriHost.ipcMain.invoke(
-        json.channel,
-        event,
-        ...json.args
-      );
-      process.stdout.write(
-        JSON.stringify({
-          /** I need some kind of primitive sequence tag to allow out-of-order responses */
-          tag: json.tag ?? 0,
-          result,
-        }) + "\n"
-      );
-    })
-    .on("error", (err) => {
-      Logger.logError(loggerCategory, err?.message, () => err);
-    });
 })();

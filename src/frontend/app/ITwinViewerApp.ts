@@ -19,6 +19,7 @@ import {
   ViewerIpc,
 } from "../../common/ViewerConfig";
 import { Settings } from "../services/SettingsClient";
+import * as TauriApi from "@tauri-apps/api";
 
 export declare type PickAsyncMethods<T> = {
   [P in keyof T]: T[P] extends AsyncFunction ? T[P] : never;
@@ -59,16 +60,21 @@ export class ITwinViewerApp {
   });
 
   public static async getSnapshotFile(): Promise<string | undefined> {
-    const options: OpenDialogOptions = {
-      title: ITwinViewerApp.translate("openSnapshot"),
-      properties: ["openFile"],
-      filters: [{ name: "iModels", extensions: ["ibim", "bim"] }],
-    };
-    const val = await ITwinViewerApp.ipcCall.openFile(options);
-
-    return val.canceled || val.filePaths.length === 0
-      ? undefined
-      : val.filePaths[0];
+    try {
+      return (await TauriApi.dialog.open({
+        filters: [
+          {
+            name: "iModels",
+            extensions: ["ibim", "bim"],
+          },
+        ],
+        multiple: false,
+        directory: false,
+      })) as string;
+    } catch {
+      // was cancelled
+      return undefined;
+    }
   }
 
   public static initializeMenuListeners(

@@ -4,8 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IpcHandler } from "@bentley/imodeljs-backend";
-import { dialog } from "electron";
-import * as minimist from "minimist";
 
 import {
   channelName,
@@ -33,14 +31,6 @@ class ViewerHandler extends IpcHandler implements ViewerIpc {
       redirectUri: getAppEnvVar("REDIRECT_URI") ?? "",
       issuerUrl: getAppEnvVar("ISSUER_URL"),
     };
-  }
-  /**
-   * Open file dialog
-   * @param options
-   * @returns
-   */
-  public async openFile(options: any): Promise<Electron.OpenDialogReturnValue> {
-    return dialog.showOpenDialog(options);
   }
 
   /**

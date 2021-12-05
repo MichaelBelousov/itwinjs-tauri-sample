@@ -54,10 +54,10 @@ fn main() {
             CommandEvent::Terminated(payload) => { println!("got terminated: {:?}", payload); }
             _ => { println!("got unknown!"); }
           };
-
         }
         println!("error child had None response");
       });
+
       Ok(())
     })
     .run(tauri::generate_context!())
