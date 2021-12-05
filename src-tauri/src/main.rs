@@ -25,8 +25,8 @@ fn main() {
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
         .args(&[
-          //"--inspect",
-          "--inspect-brk",
+          "--inspect",
+          //"--inspect-brk",
           "binaries/dist/main.js"
         ])
         .spawn()

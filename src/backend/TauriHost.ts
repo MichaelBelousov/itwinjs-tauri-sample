@@ -45,6 +45,7 @@ namespace Tauri {
   export interface IpcRendererEvent extends ElectronIpcRendererEvent {}
 }
 
+// TODO: switch to websocket IPC?
 class TauriIpcBackend implements IpcSocketBackend {
   public addListener(channel: string, listener: IpcListener): RemoveFunction {
     TauriHost.ipcMain.addListener(channel, listener);
@@ -185,10 +186,7 @@ export class TauriHost {
           process.stdin
             .pipe(split(JSON.parse))
             .on("data", async (json) => {
-              const event =
-                typeof Event !== "undefined"
-                  ? new Event(json.args[0])
-                  : ({} as Event);
+              const event = undefined;``
               const result = await TauriHost.ipcMain.invoke(
                 json.channel,
                 event,
