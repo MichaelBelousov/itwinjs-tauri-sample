@@ -21,14 +21,10 @@ struct Message {
 fn main() {
   tauri::Builder::default()
     .setup(|app| {
-      let (mut rx, mut child) = Command::new_sidecar("node")
+      let (mut rx, child) = Command::new_sidecar("node")
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
-        .args(&[
-          "--inspect",
-          //"--inspect-brk",
-          "binaries/dist/main.js"
-        ])
+        .args(&["--inspect", "binaries/dist/main.js"])
         .spawn()
         .expect("Failed to spawn packaged node");
 

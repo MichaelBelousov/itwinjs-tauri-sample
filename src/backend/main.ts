@@ -41,7 +41,6 @@ const viewerMain = async () => {
   const makeLogImpl =
     (name: string): Parameters<typeof Logger["initialize"]>[0] =>
     (category, message, getMetaData) =>
-      //process.stderr.write(
       logFile.write(
         `${name}   |${category}| ${message}${(Logger as any).formatMetaData(
           getMetaData

@@ -9,7 +9,7 @@ import {
   PromiseReturnType,
 } from "@bentley/imodeljs-frontend";
 import { IpcSocketFrontend, IpcListener } from "@bentley/imodeljs-common";
-import type { EventCallback, UnlistenFn } from "@tauri-apps/api/event";
+import type { EventCallback } from "@tauri-apps/api/event";
 import * as TauriApi from "@tauri-apps/api";
 import { Tauri, TauriRpcManager } from "src/common/TauriHost";
 import { EventEmitter } from "events";
@@ -37,50 +37,49 @@ class TauriIpcFrontend implements IpcSocketFrontend {
   // NOTE: this replaces the electron preload script
   private api = new (class implements ITwinTauriApi {
     private taggedEvents = new EventEmitter();
+    private emitter = new EventEmitter();
     public constructor() {
       TauriApi.event.listen<any>("ipcRenderer_event_respond", (event) => {
         const p = event.payload;
         try {
           const json = JSON.parse(p.json);
-          this.taggedEvents.emit(json.tag, json.result, event);
+          if (json?.type === "ipc") {
+            this.emitter.emit(json.channel, ...json.args);
+          } else {
+            this.taggedEvents.emit(json.tag, json, event);
+          }
         } catch {
           console.log("received event in unknown format", event);
         }
       });
     }
-    private _unlisteners = new Map<
-      string,
-      Map<TauriListener, Promise<UnlistenFn>>
-    >();
     public addListener(channel: string, listener: TauriListener) {
       TauriIpcFrontend.checkPrefix(channel);
-      if (!this._unlisteners.has(channel))
-        this._unlisteners.set(channel, new Map());
-      const unlistenerPromise = TauriApi.event.listen(channel, listener);
-      this._unlisteners.get(channel)!.set(listener, unlistenerPromise);
+      this.emitter.addListener(channel, listener);
     }
     public removeListener(channel: string, listener: TauriListener) {
       TauriIpcFrontend.checkPrefix(channel);
-      this._unlisteners
-        .get(channel)
-        ?.get(listener)
-        ?.then((unlistener) => unlistener());
+      this.emitter.removeListener(channel, listener);
     }
     public once(channel: string, listener: TauriListener) {
       TauriIpcFrontend.checkPrefix(channel);
-      if (!this._unlisteners.has(channel))
-        this._unlisteners.set(channel, new Map());
-      const unlistenerPromise = TauriApi.event.once(channel, listener);
-      this._unlisteners.get(channel)!.set(listener, unlistenerPromise);
+      this.emitter.once(channel, listener);
     }
-    async rawInvoke(type: string, channel: string, ...data: any[]): Promise<any> {
+    async rawInvoke(
+      type: string,
+      tag: string | undefined,
+      channel: string,
+      ...data: any[]
+    ): Promise<any> {
       TauriIpcFrontend.checkPrefix(channel);
-      const tag = `${Math.random()}`; // temporary tag; ignoring mostly for now
-      const resultPromise = new Promise((resolve) => {
-        this.taggedEvents.once(tag, (result, _event) => resolve(result));
-      });
+      if (tag === undefined) tag = `${Math.random()}`; // temporary tag; ignoring mostly for now
+      const resultPromise = new Promise((resolve) =>
+        this.taggedEvents.once(tag!, (json, _event) => {
+          resolve(json);
+        })
+      );
       await TauriApi.event.emit(
-        type,
+        "ipcRenderer_event",
         JSON.stringify({
           type,
           channel,
@@ -89,14 +88,20 @@ class TauriIpcFrontend implements IpcSocketFrontend {
           json: JSON.stringify(data),
         })
       );
-      return await resultPromise;
+      const result = await resultPromise;
+      return result;
     }
     async invoke(channel: string, ...data: any[]): Promise<any> {
-      return this.rawInvoke("ipcRenderer_event", channel, ...data);
+      return await this.rawInvoke(
+        "ipcRenderer_event",
+        undefined,
+        channel,
+        ...data
+      ).then((json) => json.result);
     }
-    // rpc uses this
+    // rpc
     send(channel: string, ...data: any[]) {
-      void this.rawInvoke("rpc_send_response", channel, ...data);
+      void this.rawInvoke("rpc_send_response", data[0].id, channel, ...data);
     }
   })();
 
@@ -105,17 +110,14 @@ class TauriIpcFrontend implements IpcSocketFrontend {
   public addListener(channelName: string, listener: IpcListener) {
     if (!this.listenerConversions.has(listener))
       this.listenerConversions.set(listener, (tauriEvt) =>
-        listener(new Event(tauriEvt.event, tauriEvt.payload))
+        listener(new Event(tauriEvt.event), tauriEvt.payload)
       );
     const convertedListener = this.listenerConversions.get(listener)!;
     this.api.addListener(channelName, convertedListener);
     return () => this.removeListener(channelName, listener);
   }
   public removeListener(channelName: string, listener: IpcListener) {
-    if (!this.listenerConversions.has(listener))
-      this.listenerConversions.set(listener, (tauriEvt) =>
-        listener(new Event(tauriEvt.event, tauriEvt.payload))
-      );
+    if (!this.listenerConversions.has(listener)) return;
     const convertedListener = this.listenerConversions.get(listener)!;
     this.api.removeListener(channelName, convertedListener);
   }

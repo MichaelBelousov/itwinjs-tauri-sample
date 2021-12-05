@@ -49,6 +49,7 @@ class TauriIpcBackend implements IpcSocketBackend {
         type: "ipc",
         channel,
         args,
+        tag: args?.[0]?.id,
       }) + "\n"
     );
   }
@@ -182,7 +183,7 @@ export class TauriHost {
             );
             // HACK: rpc has its own listener which will write a response, we should probably do the same for ipc but right now
             // in that case we respond here
-            //if (json.type === "rpc_send_response") return;
+            if (json.type === "rpc_send_response") return;
             process.stdout.write(
               JSON.stringify({
                 /** I need some kind of primitive sequence tag to allow out-of-order responses */
