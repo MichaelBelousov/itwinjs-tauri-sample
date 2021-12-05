@@ -28,6 +28,18 @@ import {
 } from "@bentley/imodeljs-common";
 import { PresentationRpcInterface } from "@bentley/presentation-common";
 
+import type { IpcRendererEvent as ElectronIpcRendererEvent } from "electron";
+
+export namespace Tauri {
+  export interface BrowserWindow
+    extends Partial<import("electron").BrowserWindow> {}
+
+  export interface BrowserWindowConstructorOptions
+    extends Partial<import("electron").BrowserWindowConstructorOptions> {}
+
+  export interface IpcRendererEvent extends ElectronIpcRendererEvent {}
+}
+
 const PUSH = "__push__";
 
 /** @internal */
@@ -231,13 +243,6 @@ export abstract class TauriIpcTransport<
 
   /** @internal */
   public sendResponse(message: TOut, evt: any) {
-    process.stdout.write(
-      JSON.stringify({
-        type: "sendResponse",
-        message,
-        evt,
-      }) + "\n"
-    );
     const value = this._extractValue(message);
     this._send(message, value, evt);
   }
@@ -304,20 +309,6 @@ export class TauriBackendIpcTransport extends TauriIpcTransport<
     this.sendResponse(response, evt);
     response.rawResult = raw;
   }
-
-  /*
-  protected override performSend(channel: string, message: any, evt: any) {
-    if (evt) {
-      return super.performSend(channel, message, evt);
-    }
-
-    const target = TauriRpcConfiguration.targetWindowId;
-    const windows = target
-      ? [this._browserWindow.fromId(target)]
-      : this._browserWindow.getAllWindows();
-    windows.forEach((window: any) => window.webContents.send(channel, message));
-  }
-  */
 }
 
 let transport: TauriIpcTransport | undefined;

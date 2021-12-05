@@ -10,20 +10,9 @@ import {
 } from "@bentley/imodeljs-frontend";
 import { IpcSocketFrontend, IpcListener } from "@bentley/imodeljs-common";
 import type { EventCallback, UnlistenFn } from "@tauri-apps/api/event";
-import type { IpcRendererEvent as ElectronIpcRendererEvent } from "electron";
 import * as TauriApi from "@tauri-apps/api";
-import { TauriRpcManager } from "src/common/TauriHost";
+import { Tauri, TauriRpcManager } from "src/common/TauriHost";
 import { EventEmitter } from "events";
-
-namespace Tauri {
-  export interface BrowserWindow
-    extends Partial<import("electron").BrowserWindow> {}
-
-  export interface BrowserWindowConstructorOptions
-    extends Partial<import("electron").BrowserWindowConstructorOptions> {}
-
-  export interface IpcRendererEvent extends ElectronIpcRendererEvent {}
-}
 
 type TauriListener = EventCallback<Tauri.IpcRendererEvent>;
 
@@ -84,16 +73,16 @@ class TauriIpcFrontend implements IpcSocketFrontend {
       const unlistenerPromise = TauriApi.event.once(channel, listener);
       this._unlisteners.get(channel)!.set(listener, unlistenerPromise);
     }
-    async invoke(channel: string, ...data: any[]): Promise<any> {
+    async rawInvoke(type: string, channel: string, ...data: any[]): Promise<any> {
       TauriIpcFrontend.checkPrefix(channel);
       const tag = `${Math.random()}`; // temporary tag; ignoring mostly for now
       const resultPromise = new Promise((resolve) => {
         this.taggedEvents.once(tag, (result, _event) => resolve(result));
       });
       await TauriApi.event.emit(
-        "ipcRenderer_event",
+        type,
         JSON.stringify({
-          type: "ipcRenderer_event",
+          type,
           channel,
           tag,
           args: data,
@@ -102,9 +91,12 @@ class TauriIpcFrontend implements IpcSocketFrontend {
       );
       return await resultPromise;
     }
+    async invoke(channel: string, ...data: any[]): Promise<any> {
+      return this.rawInvoke("ipcRenderer_event", channel, ...data);
+    }
     // rpc uses this
     send(channel: string, ...data: any[]) {
-      void this.invoke(channel, ...data);
+      void this.rawInvoke("rpc_send_response", channel, ...data);
     }
   })();
 

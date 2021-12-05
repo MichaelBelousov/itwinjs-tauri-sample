@@ -29,21 +29,10 @@ import {
 } from "@bentley/imodeljs-common";
 import { ElectronAuthorizationBackend } from "@bentley/electron-manager/lib/ElectronBackend";
 import { EventEmitter } from "events";
-import type { IpcRendererEvent as ElectronIpcRendererEvent } from "electron";
-import { TauriRpcManager } from "../common/TauriHost";
+import { Tauri, TauriRpcManager } from "../common/TauriHost";
 import split from "split";
 
 const loggerCategory = "taurihost-backend";
-
-namespace Tauri {
-  export interface BrowserWindow
-    extends Partial<import("electron").BrowserWindow> {}
-
-  export interface BrowserWindowConstructorOptions
-    extends Partial<import("electron").BrowserWindowConstructorOptions> {}
-
-  export interface IpcRendererEvent extends ElectronIpcRendererEvent {}
-}
 
 // TODO: switch to websocket IPC?
 class TauriIpcBackend implements IpcSocketBackend {
@@ -178,65 +167,48 @@ export class TauriHost {
   })();
   public static rpcConfig: RpcConfiguration;
 
-  public static ipcMain = (() => {
-    return new (class extends EventEmitter {
-      public constructor() {
-        super();
-        IModelHost.onAfterStartup.addOnce(() => {
-          process.stdin
-            .pipe(split(JSON.parse))
-            .on("data", async (json) => {
-              const event = undefined;``
-              const result = await TauriHost.ipcMain.invoke(
-                json.channel,
-                event,
-                ...json.args
-              );
-              process.stdout.write(
-                JSON.stringify({
-                  /** I need some kind of primitive sequence tag to allow out-of-order responses */
-                  tag: json.tag ?? 0,
-                  result,
-                }) + "\n"
-              );
-            })
-            .on("error", (err) => {
-              Logger.logError(loggerCategory, err?.message, () => err);
-            });
-        });
-      }
-      //////////////////////////////////////////////
-      //private handlers = new Map<string, (...args: any[]) => any>();
-      public invoke(channel: string, _evt?: Event, ...args: any[]): any {
-        //this.emit(channel, _evt, ...args);
-
-        // FIXME: use this.rawListeners
-        const channelListeners = this.listeners(channel);
-        if (channelListeners.length === 0)
-          throw Error("cannot invoke on unhandled channel");
-        if (channelListeners.length > 1)
-          // TODO: setMaxListeners()
-          throw Error(
-            "cannot assign multiple listeners to an invokable channel"
-          );
-        const [listener] = channelListeners;
-        return listener(_evt, ...args);
-        /*
-        if (!this.handlers.has(channel))
-          throw Error("tried to invoke on an unhandled channel");
-        return this.handlers.get(channel)!(_evt, ...args);
-        */
-      }
-      //////////////////////////////////////////////
-      public handle(channel: string, listener: (...args: any[]) => any) {
-        this.addListener(channel, listener);
-        //this.handlers.set(channel, listener);
-      }
-      public removeHandler(channel: string) {
-        this.removeAllListeners(channel);
-        //this.handlers.delete(channel);
-      }
-    })();
+  public static ipcMain = new (class extends EventEmitter {
+    public constructor() {
+      super();
+      IModelHost.onAfterStartup.addOnce(() => {
+        process.stdin
+          .pipe(split(JSON.parse))
+          .on("data", async (json) => {
+            const event = undefined;
+            const result = await TauriHost.ipcMain.invoke(
+              json.channel,
+              event,
+              ...json.args
+            );
+            // HACK: rpc has its own listener which will write a response, we should probably do the same for ipc but right now
+            // in that case we respond here
+            //if (json.type === "rpc_send_response") return;
+            process.stdout.write(
+              JSON.stringify({
+                /** I need some kind of primitive sequence tag to allow out-of-order responses */
+                tag: json.tag ?? 0,
+                result,
+              }) + "\n"
+            );
+          })
+          .on("error", (err) => {
+            Logger.logError(loggerCategory, err?.message, () => err);
+          });
+      });
+    }
+    public invoke(channel: string, _evt?: Event, ...args: any[]): any {
+      // FIXME: use this.rawListeners
+      const channelListeners = this.listeners(channel);
+      if (channelListeners.length === 0)
+        throw Error("cannot invoke on unhandled channel");
+      if (channelListeners.length > 1)
+        // TODO: setMaxListeners()
+        throw Error("cannot assign multiple listeners to an invokable channel");
+      const [listener] = channelListeners;
+      return listener(_evt, ...args);
+    }
+    public handle = this.addListener;
+    public removeHandler = this.removeAllListeners;
   })();
 
   public static app = (() => {
@@ -424,6 +396,7 @@ class TauriAppHandler extends IpcHandler {
   public get channelName() {
     return "electron-safe";
   }
+  // TODO: rename to call tuari
   public async callElectron(member: string, method: string, ...args: any) {
     const electronMember = (TauriHost.tauri as any)[member];
     const func = electronMember[method];
