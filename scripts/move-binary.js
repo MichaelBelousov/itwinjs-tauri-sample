@@ -27,6 +27,9 @@ async function main() {
   await fse.copy(`dist`, `src-tauri/binaries/dist`, {
     overwrite: true,
   });
+  await fse.copy(`.env`, `src-tauri/binaries/.env`, {
+    overwrite: true,
+  });
 }
 
 main().catch((e) => {

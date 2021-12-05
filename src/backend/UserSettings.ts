@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { ViewerFile, ViewerSettings } from "../common/ViewerConfig";
+import { TauriHost } from "./TauriHost";
 
 class UserSettings {
   private _settings: ViewerSettings;
@@ -40,9 +41,9 @@ class UserSettings {
 
   public get dataPath() {
     if (!this._dataPath) {
-      this._dataPath = ElectronHost.app
-        .getPath("userData")
-        .replace("/Electron", "/iTwin Viewer");
+      // FIXME: fix the IPC and use it here
+      //this._dataPath = TauriHost.ipcMain.addListener("getPath", undefined, "userData");
+      this._dataPath = "/home/mike/.local/share/tauri-itwin"
       if (!existsSync(this._dataPath)) {
         mkdirSync(this._dataPath);
       }

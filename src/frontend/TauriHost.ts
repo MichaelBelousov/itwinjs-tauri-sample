@@ -1,6 +1,6 @@
 // part of the TauriHost that is in the frontend runtime
 
-import { ProcessDetector } from "@bentley/bentleyjs-core";
+import { Logger, ProcessDetector } from "@bentley/bentleyjs-core";
 import {
   AsyncMethodsOf,
   IpcApp,
@@ -46,6 +46,13 @@ class TauriIpcFrontend implements IpcSocketFrontend {
 
   // NOTE: this replaces the electron preload script
   private api = new (class implements ITwinTauriApi {
+    public constructor() {
+      console.log("initiating generic event response listener")
+      const _unlisten = TauriApi.event
+        .listen<any>("ipcRenderer_event_respond", (event) => {
+          console.log("generic event response ran", event)
+        });
+    }
     private _unlisteners = new Map<
       string,
       Map<TauriListener, Promise<UnlistenFn>>
@@ -73,16 +80,34 @@ class TauriIpcFrontend implements IpcSocketFrontend {
     }
     async invoke(channel: string, ...data: any[]): Promise<any> {
       TauriIpcFrontend.checkPrefix(channel);
-      const emitted = await TauriApi.event.emit(
+      const tag = Math.random(); // temporary tag; ignoring mostly for now
+      const resultPromise = new Promise<void>((resolve) => {
+        console.log("initiating once event response listener")
+        const unlistenPromise = TauriApi.event
+          .once<any>("ipcRenderer_event_respond", (event) => {
+            console.log("once event response ran", event)
+            const p = event.payload;
+            try {
+              const json = JSON.parse(p.json);
+              if (json.tag === tag) {
+                unlistenPromise.then((unlisten) => unlisten());
+                resolve(json.result);
+              }
+            } catch {}
+          });
+      });
+      console.log("emitting event:", data);
+      await TauriApi.event.emit(
         "ipcRenderer_event",
         JSON.stringify({
           type: "ipcRenderer_event",
           channel,
+          tag,
           args: data,
           json: JSON.stringify(data),
         })
       );
-      return emitted;
+      return await resultPromise;
     }
     send(channel: string, ...data: any[]) {
       TauriIpcFrontend.checkPrefix(channel);

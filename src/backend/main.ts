@@ -54,10 +54,6 @@ const viewerMain = async () => {
     makeLogImpl("Info"),
     makeLogImpl("Trace")
   );
-  process.on("beforeExit", () => {
-    console.error("beforeExit!");
-    logFile.close();
-  });
   Logger.setLevelDefault(LogLevel.Info);
   Logger.setLevel(AppLoggerCategory.Backend, LogLevel.Info);
 
@@ -180,14 +176,14 @@ const createMenu = () => {
     Logger.logError(loggerCategory, error);
     process.exitCode = 1;
   }
-  // TODO: move to tauri ipc startup...
+  // TODO: move to tauri ipcMain init
   process.stdin
     .pipe(split(JSON.parse))
     .on("data", async (json) => {
-      const event = typeof Event !== "undefined" ? new Event(json.args[0]) : {};
+      const event = typeof Event !== "undefined" ? new Event(json.args[0]) : {} as Event;
       const result = await TauriHost.ipcMain.invoke(
         json.channel,
-        event as Event,
+        event,
         ...json.args
       );
       process.stdout.write(

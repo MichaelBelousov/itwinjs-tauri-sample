@@ -4,7 +4,7 @@
 )]
 
 use tauri::{
-  api::process::{Command, CommandEvent, CommandChild},
+  api::process::{Command, CommandEvent},
   Manager,
 };
 
@@ -12,7 +12,7 @@ use std::{
   cell::RefCell,
 };
 
-#[derive(serde::Serialize, Clone)]
+#[derive(serde::Serialize, Clone, Debug)]
 struct Message {
   channel: String,
   json: String,
@@ -25,15 +25,15 @@ fn main() {
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
         .args(&[
-          "--inspect",
-          //"--inspect-brk",
+          //"--inspect",
+          "--inspect-brk",
           "binaries/dist/main.js"
         ])
         .spawn()
         .expect("Failed to spawn packaged node");
 
       let window = app.get_window("main").unwrap();
-
+      // this probably ought to be wrapped in a mutex
       let child_cell = RefCell::new(child);
 
       window.listen("ipcRenderer_event", move |event| {
@@ -44,36 +44,22 @@ fn main() {
       });
 
       tauri::async_runtime::spawn(async move {
-        println!("started ipcRenderer_responder");
-        if let Some(cmd) = rx.recv().await {
-          println!("got cmd {:?}", cmd);
-          window.emit("ipcRenderer_event_respond",
-            match cmd {
-              CommandEvent::Stdout(json) => {
-                Message { json, channel: "ipcRenderer_invoke".into() }
-              }
-              CommandEvent::Stderr(json) => {
-                Message { json, channel: "ipcRenderer_invoke_err".into() }
-              }
-              CommandEvent::Terminated(payload) => {
-                //Err("sidecar terminated".into())
-                Message { json: "terminated!".into(), channel: "ipcRenderer_invoke_term".into() }
-              }
-              _ => {
-                println!("unknown!");
-                //Err("unknown command event".into())
-                Message { json: "unknown!".into(), channel: "ipcRenderer_invoke_unknown".into() }
-              }
+        while let Some(cmd) = rx.recv().await  {
+          println!("got cmd: {:?}", cmd);
+          match cmd {
+            CommandEvent::Stdout(json) => {
+              window.emit("ipcRenderer_event_respond", Message { json, channel: "ipcRenderer_invoke".into() });
             }
-          );
-        } else {
-          println!("error child had None response")
-        }
-      });
+            CommandEvent::Stderr(json) => { println!("got stderr: {:?}", json); }
+            CommandEvent::Terminated(payload) => { println!("got terminated: {:?}", payload); }
+            _ => { println!("got unknown!"); }
+          };
 
+        }
+        println!("error child had None response");
+      });
       Ok(())
     })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
-
