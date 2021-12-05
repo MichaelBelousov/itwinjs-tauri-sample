@@ -110,7 +110,8 @@ class TauriIpcFrontend implements IpcSocketFrontend {
   public addListener(channelName: string, listener: IpcListener) {
     if (!this.listenerConversions.has(listener))
       this.listenerConversions.set(listener, (tauriEvt) =>
-        listener(new Event(tauriEvt.event), tauriEvt.payload)
+        // FIXME: fix the emit chain and use a real event after
+        listener({} as Event, tauriEvt)
       );
     const convertedListener = this.listenerConversions.get(listener)!;
     this.api.addListener(channelName, convertedListener);
