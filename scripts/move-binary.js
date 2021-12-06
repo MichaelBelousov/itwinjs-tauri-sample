@@ -23,7 +23,7 @@ async function main() {
       overwrite: false,
     }
   );
-  await fse.copy(`dist`, `src-tauri/binaries/dist`, {
+  await fse.copy(`dist`, `src-tauri/resources/dist`, {
     overwrite: true,
   });
   // TODO: this may not copy to the correct place (I believe pwd is actually just src-tauri, probably the dotEnv call needs to reflect that)

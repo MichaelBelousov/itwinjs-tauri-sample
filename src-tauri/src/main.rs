@@ -4,12 +4,16 @@
 )]
 
 use tauri::{
-  api::process::{Command, CommandEvent},
+  self,
+  api::{
+    process::{Command, CommandEvent},
+  },
   Manager,
 };
 
 use std::{
   cell::RefCell,
+  path::PathBuf,
 };
 
 #[derive(serde::Serialize, Clone, Debug)]
@@ -21,10 +25,20 @@ struct Message {
 fn main() {
   tauri::Builder::default()
     .setup(|app| {
+      // TODO: figure out a better way to do this, probably according to tauri:
+      let sidecar_path = if !cfg!(debug_assertions) {
+        let mut path = app.path_resolver().resource_dir().expect("resource dir couldn't be loaded");
+        path.push("dist/main.js");
+        path
+      } else {
+        PathBuf::from("resources/dist/main.js")
+      };
+      let sidecar_path = sidecar_path.as_path().to_str().expect("resource path was invalid");
+
       let (mut rx, child) = Command::new_sidecar("node")
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
-        .args(&["--inspect", "binaries/dist/main.js"])
+        .args(&["--inspect", sidecar_path])
         .spawn()
         .expect("Failed to spawn packaged node");
 
@@ -44,7 +58,9 @@ fn main() {
           //println!("got cmd: {:?}", cmd);
           match cmd {
             CommandEvent::Stdout(json) => {
-              window.emit("ipcRenderer_event_respond", Message { json, channel: "ipcRenderer_invoke".into() });
+              window
+                .emit("ipcRenderer_event_respond", Message { json, channel: "ipcRenderer_invoke".into() })
+                .expect("emitting ipcRenderer event response failed");
             }
             CommandEvent::Stderr(json) => { println!("got stderr: {:?}", json); }
             CommandEvent::Terminated(payload) => { println!("got terminated: {:?}", payload); }

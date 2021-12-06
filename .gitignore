@@ -125,5 +125,8 @@ test_video.mp4
 # tauri binaries
 src-tauri/binaries
 
+# generated dist but in resource location
+src-tauri/resources/dist
+
 # sidecar logs
 itwin-sidecar_*.log
