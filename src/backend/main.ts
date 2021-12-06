@@ -15,6 +15,7 @@ import { channelName, viewerRpcs } from "../common/ViewerConfig";
 import { appInfo, getAppEnvVar } from "./AppInfo";
 import { TauriHost, TauriHostOptions } from "./TauriHost";
 import ViewerHandler from "./ViewerHandler";
+import * as TauriApi from "@tauri-apps/api";
 
 const loggerCategory = "tauri-main";
 
@@ -34,7 +35,11 @@ const viewerMain = async () => {
       // get the last number
       .sort((a, b) => b - a)[0] ?? 0;
   const logFile = fs.createWriteStream(
-    `itwin-sidecar_${latestLogFileNum + 1}.log`,
+    path.join(
+      await TauriApi.path.appDir(),
+      "logs",
+      `itwin-sidecar_${latestLogFileNum + 1}.log`
+    ),
     { flags: "wx" }
   );
   const makeLogImpl =

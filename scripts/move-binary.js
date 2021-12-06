@@ -28,6 +28,18 @@ async function main() {
   await fse.copy(`.env`, `src-tauri/.env`, {
     overwrite: true,
   });
+
+  // remove some unnecessary native components that imodeljs brings with it but doesn't use
+  // TODO: try to move to webpack logic
+  await Promise.all(
+    ["node_modules/@bentley/imodeljs-native/imodeljs-linux-x64/BeBlobDaemon"]
+      .map((file) => path.join("src-tauri/dist", file))
+      .map(async (path) => {
+        try {
+          await fse.rm(path);
+        } catch {}
+      })
+  );
 }
 
 main().catch((e) => {
