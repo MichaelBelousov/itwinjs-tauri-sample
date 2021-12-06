@@ -131,3 +131,4 @@ src-tauri/resources/dist
 
 # sidecar logs
 itwin-sidecar_*.log
+.dev-app-dir
