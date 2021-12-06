@@ -11,7 +11,6 @@ import {
   PromiseReturnType,
 } from "@bentley/imodeljs-frontend";
 import { NavigateFn } from "@reach/router";
-import { OpenDialogOptions } from "electron";
 
 import {
   channelName,

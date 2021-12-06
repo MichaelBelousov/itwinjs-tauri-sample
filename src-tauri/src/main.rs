@@ -35,10 +35,17 @@ fn main() {
       };
       let sidecar_path = sidecar_path.as_path().to_str().expect("resource path was invalid");
 
+      let app_dir = if !cfg!(debug_assertions) {
+        app.path_resolver().app_dir().expect("app dir couldn't be loaded")
+      } else {
+        PathBuf::from(".dev-app-dir")
+      };
+      let app_dir = app_dir.as_path().to_str().expect("app dir was invalid");
+
       let (mut rx, child) = Command::new_sidecar("node")
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
-        .args(&["--inspect", sidecar_path])
+        .args(&["--inspect-brk", sidecar_path, app_dir])
         .spawn()
         .expect("Failed to spawn packaged node");
 

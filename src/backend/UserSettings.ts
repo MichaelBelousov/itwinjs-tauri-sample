@@ -3,12 +3,12 @@
  * See LICENSE.md in the project root for license terms and full copyright notice.
  *--------------------------------------------------------------------------------------------*/
 
-import { ElectronHost } from "@bentley/electron-manager/lib/ElectronBackend";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { ViewerFile, ViewerSettings } from "../common/ViewerConfig";
-import { TauriHost } from "./TauriHost";
+
+const appDir = process.argv.slice(-1)[0];
 
 class UserSettings {
   private _settings: ViewerSettings;
@@ -43,7 +43,7 @@ class UserSettings {
     if (!this._dataPath) {
       // FIXME: fix the IPC and use it here
       //this._dataPath = TauriHost.ipcMain.addListener("getPath", undefined, "userData");
-      this._dataPath = "/home/mike/.local/share/tauri-itwin"
+      this._dataPath = appDir;
       if (!existsSync(this._dataPath)) {
         mkdirSync(this._dataPath);
       }

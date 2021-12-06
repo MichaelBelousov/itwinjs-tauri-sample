@@ -15,11 +15,12 @@ import { channelName, viewerRpcs } from "../common/ViewerConfig";
 import { appInfo, getAppEnvVar } from "./AppInfo";
 import { TauriHost, TauriHostOptions } from "./TauriHost";
 import ViewerHandler from "./ViewerHandler";
-import * as TauriApi from "@tauri-apps/api";
 
 const loggerCategory = "tauri-main";
 
 require("dotenv-flow").config(); // eslint-disable-line @typescript-eslint/no-var-requires
+
+const appDir = process.argv.slice(-1)[0];
 
 /** This is the function that gets called when we start iTwinViewer via `electron ViewerMain.js` from the command line.
  * It runs in the Electron main process and hosts the iModeljs backend (IModelHost) code. It starts the render (frontend) process
@@ -27,19 +28,17 @@ require("dotenv-flow").config(); // eslint-disable-line @typescript-eslint/no-va
  */
 const viewerMain = async () => {
   // Setup logging immediately to pick up any logging during IModelHost.startup()
+  const logDir = path.join(appDir, "logs");
   const latestLogFileNum =
-    (await fs.promises.readdir(process.cwd()))
+    (await fs.promises.readdir(logDir))
       .map((fileName) => /itwin-sidecar_(?<num>\d+)\.log/.exec(fileName))
       .filter((match): match is RegExpExecArray => match !== null)
       .map((match) => parseInt(match.groups!.num))
       // get the last number
       .sort((a, b) => b - a)[0] ?? 0;
+  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
   const logFile = fs.createWriteStream(
-    path.join(
-      await TauriApi.path.appDir(),
-      "logs",
-      `itwin-sidecar_${latestLogFileNum + 1}.log`
-    ),
+    path.join(logDir, `itwin-sidecar_${latestLogFileNum + 1}.log`),
     { flags: "wx" }
   );
   const makeLogImpl =

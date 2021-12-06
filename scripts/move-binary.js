@@ -33,11 +33,14 @@ async function main() {
   // TODO: try to move to webpack logic
   await Promise.all(
     ["node_modules/@bentley/imodeljs-native/imodeljs-linux-x64/BeBlobDaemon"]
-      .map((file) => path.join("src-tauri/dist", file))
-      .map(async (path) => {
+      .map((filePath) => path.join("src-tauri/dist", filePath))
+      .map(async (filePath) => {
         try {
-          await fse.rm(path);
-        } catch {}
+          console.log(`removing ${path.resolve(filePath)}`);
+          await fse.remove(filePath);
+        } catch (err) {
+          console.error(err);
+        }
       })
   );
 }
