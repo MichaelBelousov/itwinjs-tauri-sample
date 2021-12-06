@@ -25,8 +25,9 @@ struct Message {
 fn main() {
   tauri::Builder::default()
     .setup(|app| {
+      let in_tauri_debug = cfg!(debug_assertions);
       // TODO: figure out a better way to do this, probably according to tauri:
-      let sidecar_path = if !cfg!(debug_assertions) {
+      let sidecar_path = if !in_tauri_debug {
         let mut path = app.path_resolver().resource_dir().expect("resource dir couldn't be loaded");
         path.push("dist/main.js");
         path
@@ -35,7 +36,7 @@ fn main() {
       };
       let sidecar_path = sidecar_path.as_path().to_str().expect("resource path was invalid");
 
-      let app_dir = if !cfg!(debug_assertions) {
+      let app_dir = if !in_tauri_debug {
         app.path_resolver().app_dir().expect("app dir couldn't be loaded")
       } else {
         PathBuf::from(".dev-app-dir")
