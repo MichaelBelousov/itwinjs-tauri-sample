@@ -29,7 +29,7 @@ const appDir = process.argv.slice(-1)[0];
 const viewerMain = async () => {
   // Setup logging immediately to pick up any logging during IModelHost.startup()
   const logDir = path.join(appDir, "logs");
-  process.stderr.write(`logDir: ${logDir}`);
+  process.stderr.write(`logDir: ${logDir}\n`);
   if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, {recursive: true});
   const latestLogFileNum =
     (await fs.promises.readdir(logDir))
@@ -176,7 +176,7 @@ const createMenu = () => {
     await viewerMain();
   } catch (error) {
     Logger.logError(loggerCategory, error);
-    process.stderr.write(`error: ${error?.message}`);
+    process.stderr.write(`error: ${error?.message}\n`);
     process.exitCode = 1;
   }
 })();
