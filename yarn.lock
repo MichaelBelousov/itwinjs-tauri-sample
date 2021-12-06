@@ -1551,82 +1551,6 @@
   dependencies:
     "@bentley/bentleyjs-core" "2.19.22"
 
-"@bentley/react-scripts@^4.0.3":
-  version "4.0.5"
-  resolved "https://pkgs.dev.azure.com/bentleycs/_packaging/Packages/npm/registry/@bentley/react-scripts/-/react-scripts-4.0.5.tgz#94d21cc65fbbb4e1b6c51c60e71ad87e80ac7418"
-  integrity sha1-lNIcxl+7tOG2xRxg5xrYfoCsdBg=
-  dependencies:
-    "@babel/core" "7.12.3"
-    "@bentley/webpack-tools-core" "^2.16.2"
-    "@pmmmwh/react-refresh-webpack-plugin" "^0.5.1"
-    "@svgr/webpack" "5.5.0"
-    "@typescript-eslint/eslint-plugin" "^4.5.0"
-    "@typescript-eslint/parser" "^4.5.0"
-    babel-eslint "^10.1.0"
-    babel-jest "^26.6.0"
-    babel-loader "8.1.0"
-    babel-plugin-import-remove-resource-query "^1.0.0"
-    babel-plugin-named-asset-import "^0.3.7"
-    babel-plugin-strip-requirejs-plugin-prefix "1.0.0"
-    babel-preset-react-app "^10.0.0"
-    bfj "^7.0.2"
-    camelcase "^6.1.0"
-    case-sensitive-paths-webpack-plugin "2.3.0"
-    css-loader "4.3.0"
-    dotenv "8.2.0"
-    dotenv-expand "5.1.0"
-    eslint "^7.11.0"
-    eslint-config-react-app "^6.0.0"
-    eslint-plugin-flowtype "^5.2.0"
-    eslint-plugin-import "^2.22.1"
-    eslint-plugin-jest "^24.1.0"
-    eslint-plugin-jsx-a11y "^6.3.1"
-    eslint-plugin-react "^7.21.5"
-    eslint-plugin-react-hooks "^4.2.0"
-    eslint-plugin-testing-library "^4.9.0"
-    eslint-webpack-plugin "^2.5.2"
-    fast-sass-loader "^2.0.0"
-    file-loader "6.1.1"
-    fs-extra "^9.0.1"
-    html-webpack-plugin "4.5.0"
-    identity-obj-proxy "3.0.0"
-    jest "26.6.0"
-    jest-circus "26.6.0"
-    jest-resolve "26.6.0"
-    jest-watch-typeahead "0.6.1"
-    mini-css-extract-plugin "0.11.3"
-    optimize-css-assets-webpack-plugin "5.0.4"
-    pnp-webpack-plugin "1.6.4"
-    postcss-flexbugs-fixes "4.2.1"
-    postcss-loader "3.0.0"
-    postcss-normalize "8.0.1"
-    postcss-preset-env "6.7.0"
-    postcss-safe-parser "5.0.2"
-    prompts "2.4.0"
-    react-app-polyfill "^2.0.0"
-    react-dev-utils "^11.0.3"
-    react-refresh "^0.10.0"
-    resolve "1.18.1"
-    resolve-url-loader "^3.1.2"
-    sass "^1.32.8"
-    sass-loader "^10.0.5"
-    semver "7.3.2"
-    source-map-loader "^1.0.0"
-    speed-measure-webpack-plugin "^1.3.3"
-    style-loader "1.3.0"
-    svg-sprite-loader "4.2.1"
-    terser-webpack-plugin "4.2.3"
-    ts-jest "^26.5.2"
-    ts-pnp "1.2.0"
-    url-loader "4.1.1"
-    webpack "4.44.2"
-    webpack-dev-server "3.11.1"
-    webpack-filter-warnings-plugin "^1.2.1"
-    webpack-manifest-plugin "2.2.0"
-    workbox-webpack-plugin "5.1.4"
-  optionalDependencies:
-    fsevents "^2.1.3"
-
 "@bentley/reality-data-client@2.19.22":
   version "2.19.22"
   resolved "https://pkgs.dev.azure.com/bentleycs/_packaging/Packages/npm/registry/@bentley/reality-data-client/-/reality-data-client-2.19.22.tgz#f0249da51c5a3d7af4d6a75de5976b5e2933c278"
@@ -7848,7 +7772,7 @@ fs-constants@^1.0.0:
   resolved "https://registry.yarnpkg.com/fs-constants/-/fs-constants-1.0.0.tgz#6be0de9be998ce16af8afc24497b9ee9b7ccd9ad"
   integrity sha512-y6OAwoSIf7FyjMIv94u+b5rdheZEjzR63GTyZJm5qh4Bi+2YgwLCcI/fPFZkL5PSixOt6ZNKm+w+Hfp/Bciwow==
 
-fs-extra@10.0.0, fs-extra@^10.0.0:
+fs-extra@10.0.0:
   version "10.0.0"
   resolved "https://registry.yarnpkg.com/fs-extra/-/fs-extra-10.0.0.tgz#9ff61b655dde53fb34a82df84bb214ce802e17c1"
   integrity sha512-C5owb14u9eJwizKGdchcDUQeFtlSHHthBk8pbX9Vc1PFZrLombudjDnNns88aYslCyF6IY5SUw3Roz6xShcEIQ==
@@ -7924,7 +7848,7 @@ fsevents@^1.0.0, fsevents@^1.2.7:
     bindings "^1.5.0"
     nan "^2.12.1"
 
-fsevents@^2.1.2, fsevents@^2.1.3, fsevents@~2.3.1, fsevents@~2.3.2:
+fsevents@^2.1.2, fsevents@~2.3.1, fsevents@~2.3.2:
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.2.tgz#8a526f78b8fdf4623b709e0b975c52c24c02fd1a"
   integrity sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==
@@ -14618,7 +14542,7 @@ sass-loader@^10.0.5:
     schema-utils "^3.0.0"
     semver "^7.3.2"
 
-sass@^1.29.0, sass@^1.32.8:
+sass@^1.32.8:
   version "1.43.4"
   resolved "https://registry.yarnpkg.com/sass/-/sass-1.43.4.tgz#68c7d6a1b004bef49af0d9caf750e9b252105d1f"
   integrity sha512-/ptG7KE9lxpGSYiXn7Ar+lKOv37xfWsZRtFYal2QHNigyVQDx685VFT/h7ejVr+R8w7H4tmUgtulsKl5YpveOg==
