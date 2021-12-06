@@ -7,7 +7,7 @@
     "distDir": "../build",
     "devPath": "http://localhost:3000",
     "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "beforeBuildCommand": "NODE_ENV=production yarn run build:backend"
   },
   "tauri": {
     "bundle": {
@@ -21,7 +21,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "resources": ["resources"],
+      "resources": ["dist", ".env"],
       "externalBin": ["binaries/node"],
       "copyright": "",
       "category": "DeveloperTool",

@@ -6,8 +6,7 @@
 import { Logger, LogLevel } from "@bentley/bentleyjs-core";
 import { IpcHost } from "@bentley/imodeljs-backend";
 import { Presentation } from "@bentley/presentation-backend";
-import { Menu } from "electron";
-import { MenuItemConstructorOptions } from "electron/main";
+import type { MenuItemConstructorOptions } from "electron/main";
 import * as path from "path";
 import * as fs from "fs";
 
@@ -159,9 +158,9 @@ const createMenu = () => {
       : []),
   ] as MenuItemConstructorOptions[];
 
-  const menu = Menu.buildFromTemplate(template);
+  //const menu = Menu.buildFromTemplate(template);
 
-  Menu.setApplicationMenu(menu);
+  //Menu.setApplicationMenu(menu);
   TauriHost.mainWindow.setMenuBarVisibility(true);
   // this is overridden in ElectronHost and set to true so it needs to be...re-overriden??
   TauriHost.mainWindow.setAutoHideMenuBar(false);

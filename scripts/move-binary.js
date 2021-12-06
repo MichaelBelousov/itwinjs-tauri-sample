@@ -1,6 +1,7 @@
 /**
  * This script is used to rename the binary with the platform specific postfix.
  * When `tauri build` is ran, it looks for the binary name appended with the platform specific postfix.
+ * It then copies other necessary resource files
  */
 
 const execa = require("execa");
@@ -23,11 +24,8 @@ async function main() {
       overwrite: false,
     }
   );
-  await fse.copy(`dist`, `src-tauri/resources/dist`, {
-    overwrite: true,
-  });
   // TODO: this may not copy to the correct place (I believe pwd is actually just src-tauri, probably the dotEnv call needs to reflect that)
-  await fse.copy(`.env`, `src-tauri/binaries/.env`, {
+  await fse.copy(`.env`, `src-tauri/.env`, {
     overwrite: true,
   });
 }

@@ -122,8 +122,9 @@ test_video.mp4
 # ignored backups
 *.bak
 
-# tauri binaries
+# tauri app resources
 src-tauri/binaries
+src-tauri/dist
 
 # generated dist but in resource location
 src-tauri/resources/dist

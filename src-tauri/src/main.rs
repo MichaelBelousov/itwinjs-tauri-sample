@@ -31,7 +31,7 @@ fn main() {
         path.push("dist/main.js");
         path
       } else {
-        PathBuf::from("resources/dist/main.js")
+        PathBuf::from("dist/main.js")
       };
       let sidecar_path = sidecar_path.as_path().to_str().expect("resource path was invalid");
 

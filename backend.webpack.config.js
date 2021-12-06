@@ -5,7 +5,7 @@ const {
 
 const imjsWebpackCfg = getWebpackConfig(
   path.resolve(__dirname, "./src/backend/main.ts"), // entry
-  path.resolve(__dirname, "./dist"),
+  path.resolve(__dirname, "./src-tauri/dist"),
   false
 );
 
