@@ -29,6 +29,7 @@ const appDir = process.argv.slice(-1)[0];
 const viewerMain = async () => {
   // Setup logging immediately to pick up any logging during IModelHost.startup()
   const logDir = path.join(appDir, "logs");
+  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
   const latestLogFileNum =
     (await fs.promises.readdir(logDir))
       .map((fileName) => /itwin-sidecar_(?<num>\d+)\.log/.exec(fileName))
@@ -36,7 +37,6 @@ const viewerMain = async () => {
       .map((match) => parseInt(match.groups!.num))
       // get the last number
       .sort((a, b) => b - a)[0] ?? 0;
-  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
   const logFile = fs.createWriteStream(
     path.join(logDir, `itwin-sidecar_${latestLogFileNum + 1}.log`),
     { flags: "wx" }

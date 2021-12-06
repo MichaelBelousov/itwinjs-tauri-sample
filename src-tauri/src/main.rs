@@ -45,7 +45,7 @@ fn main() {
       let (mut rx, child) = Command::new_sidecar("node")
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
-        .args(&["--inspect-brk", sidecar_path, app_dir])
+        .args(&["--inspect", sidecar_path, app_dir])
         .spawn()
         .expect("Failed to spawn packaged node");
 
