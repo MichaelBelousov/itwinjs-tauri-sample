@@ -25,7 +25,7 @@ struct Message {
 fn main() {
   tauri::Builder::default()
     .setup(|app| {
-      let in_tauri_debug = cfg!(debug_assertions);
+      let in_tauri_debug = false && cfg!(debug_assertions);
       // TODO: figure out a better way to do this, probably according to tauri:
       let sidecar_path = if !in_tauri_debug {
         let mut path = app.path_resolver().resource_dir().expect("resource dir couldn't be loaded");
@@ -46,7 +46,7 @@ fn main() {
       let (mut rx, child) = Command::new_sidecar("node")
         // TODO: go back to using `pkg` to package the node.js code as v8 bytecode for startup performance and hiding source
         .expect("failed to setup `node` sidecar")
-        .args(&["--inspect", sidecar_path, app_dir])
+        .args(&["--inspect-brk", sidecar_path, app_dir])
         .spawn()
         .expect("Failed to spawn packaged node");
 
@@ -57,7 +57,9 @@ fn main() {
       window.listen("ipcRenderer_event", move |event| {
         //println!("got ipcRenderer_event! {:?}", event);
         let mut child = child_cell.borrow_mut();
-        child.write(event.payload().unwrap().as_bytes()).unwrap();
+        let payload = event.payload().unwrap();
+        println!("sent: '{}'", payload);
+        child.write(payload.as_bytes()).unwrap();
         child.write("\n".as_bytes()).unwrap();
       });
 
@@ -66,6 +68,7 @@ fn main() {
           //println!("got cmd: {:?}", cmd);
           match cmd {
             CommandEvent::Stdout(json) => {
+              println!("received: '{}'", json);
               window
                 .emit("ipcRenderer_event_respond", Message { json, channel: "ipcRenderer_invoke".into() })
                 .expect("emitting ipcRenderer event response failed");

@@ -525,6 +525,7 @@ Object.defineProperty(ProcessDetector, "isTauriAppBackend", {
   get() {
     return (
       // right now it's tauri because I say so
+      // FIXME: could check process.argv to see if it's Tauri
       typeof process === "object"
     );
   },

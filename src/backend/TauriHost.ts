@@ -26,6 +26,7 @@ import {
   IpcListener,
   RemoveFunction,
   NativeAppAuthorizationConfiguration,
+  IpcWebSocketBackend,
 } from "@bentley/imodeljs-common";
 import { ElectronAuthorizationBackend } from "@bentley/electron-manager/lib/ElectronBackend";
 import { EventEmitter } from "events";
@@ -361,7 +362,8 @@ export class TauriHost {
       throw new Error("Not running under Tauri");
 
     if (!this.isValid) {
-      this._ipc = new TauriIpcBackend();
+      this._ipc = new IpcWebSocketBackend();
+      //this._ipc = new TauriIpcBackend(); // uses sidecar stdin/out pipes for ipc
       this.rpcConfig = TauriRpcManager.initializeBackend(
         this._ipc,
         opts?.tauriHost?.rpcInterfaces

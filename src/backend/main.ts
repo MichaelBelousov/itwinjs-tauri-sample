@@ -3,7 +3,7 @@
  * See LICENSE.md in the project root for license terms and full copyright notice.
  *--------------------------------------------------------------------------------------------*/
 
-import { Logger, LogLevel } from "@bentley/bentleyjs-core";
+import { LogFunction, Logger, LogLevel } from "@bentley/bentleyjs-core";
 import { IpcHost } from "@bentley/imodeljs-backend";
 import { Presentation } from "@bentley/presentation-backend";
 import type { MenuItemConstructorOptions } from "electron/main";
@@ -30,7 +30,7 @@ const viewerMain = async () => {
   // Setup logging immediately to pick up any logging during IModelHost.startup()
   const logDir = path.join(appDir, "logs");
   process.stderr.write(`logDir: ${logDir}\n`);
-  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, {recursive: true});
+  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
   const latestLogFileNum =
     (await fs.promises.readdir(logDir))
       .map((fileName) => /itwin-sidecar_(?<num>\d+)\.log/.exec(fileName))
@@ -43,7 +43,7 @@ const viewerMain = async () => {
     { flags: "wx" }
   );
   const makeLogImpl =
-    (name: string): Parameters<typeof Logger["initialize"]>[0] =>
+    (name: string): LogFunction =>
     (category, message, getMetaData) =>
       logFile.write(
         `${name}   |${category}| ${message}${(Logger as any).formatMetaData(
@@ -56,8 +56,8 @@ const viewerMain = async () => {
     makeLogImpl("Info"),
     makeLogImpl("Trace")
   );
-  Logger.setLevelDefault(LogLevel.Info);
-  Logger.setLevel(AppLoggerCategory.Backend, LogLevel.Info);
+  Logger.setLevelDefault(LogLevel.Trace);
+  Logger.setLevel(AppLoggerCategory.Backend, LogLevel.Trace);
 
   const clientId = getAppEnvVar("CLIENT_ID") ?? "";
   const scope = getAppEnvVar("SCOPE") ?? "";

@@ -8,7 +8,11 @@ import {
   NativeAppOpts,
   PromiseReturnType,
 } from "@bentley/imodeljs-frontend";
-import { IpcSocketFrontend, IpcListener } from "@bentley/imodeljs-common";
+import {
+  IpcSocketFrontend,
+  IpcListener,
+  IpcWebSocketFrontend,
+} from "@bentley/imodeljs-common";
 import type { EventCallback } from "@tauri-apps/api/event";
 import * as TauriApi from "@tauri-apps/api";
 import { Tauri, TauriRpcManager } from "src/common/TauriHost";
@@ -28,7 +32,11 @@ export interface ITwinTauriApi {
   send: (channel: string, ...data: any[]) => void; // only valid for render -> main
 }
 
-class TauriIpcFrontend implements IpcSocketFrontend {
+const TauriIpcFrontend = IpcWebSocketFrontend;
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+type TauriIpcFrontend = IpcWebSocketFrontend;
+
+class _TauriIpcFrontend implements IpcSocketFrontend {
   private static checkPrefix(channel: string) {
     if (!channel.startsWith("itwin."))
       throw new Error(`illegal channel name '${channel}'`);
@@ -54,15 +62,15 @@ class TauriIpcFrontend implements IpcSocketFrontend {
       });
     }
     public addListener(channel: string, listener: TauriListener) {
-      TauriIpcFrontend.checkPrefix(channel);
+      _TauriIpcFrontend.checkPrefix(channel);
       this.emitter.addListener(channel, listener);
     }
     public removeListener(channel: string, listener: TauriListener) {
-      TauriIpcFrontend.checkPrefix(channel);
+      _TauriIpcFrontend.checkPrefix(channel);
       this.emitter.removeListener(channel, listener);
     }
     public once(channel: string, listener: TauriListener) {
-      TauriIpcFrontend.checkPrefix(channel);
+      _TauriIpcFrontend.checkPrefix(channel);
       this.emitter.once(channel, listener);
     }
     async rawInvoke(
@@ -71,7 +79,7 @@ class TauriIpcFrontend implements IpcSocketFrontend {
       channel: string,
       ...data: any[]
     ): Promise<any> {
-      TauriIpcFrontend.checkPrefix(channel);
+      _TauriIpcFrontend.checkPrefix(channel);
       if (tag === undefined) tag = `${Math.random()}`; // temporary tag; ignoring mostly for now
       const resultPromise = new Promise((resolve) =>
         this.taggedEvents.once(tag!, (json, _event) => {
